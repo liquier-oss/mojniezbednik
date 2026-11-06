@@ -1697,4 +1697,277 @@ WARSZTAT_INDEX = f"""
 <div class="filter-bar" role="group" aria-label="Filtr podkategorii warsztatowych">
     <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie (38)</button>
     <button class="filter-btn" onclick="setSub('gwinty', this)">🔩 Gwinty (12)</button>
-    <button class="filter-btn" onclick="setSub('stal', this)">
+    <button class="filter-btn" onclick="setSub('stal', this)">🔥 Stal i Hartowanie (6)</button>
+    <button class="filter-btn" onclick="setSub('druk3d', this)">🖨️ Druk 3D (6)</button>
+    <button class="filter-btn" onclick="setSub('elektryka', this)">⚡ Elektryka (6)</button>
+    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki (8)</button>
+</div>
+<label for="q">Szukaj w warsztacie:</label>
+<input type="text" id="q" placeholder="🔍 Wpisz np. farba, beton, m8, 440c, nmv, petg, wallbox..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(warsztat_cards)}
+</div>
+<div id="noRes" class="no-results">Brak pasujących pozycji dla wybranych kryteriów.</div>
+<script>
+let currentSub = 'all';
+function setSub(sub, btn) {{
+    currentSub = sub;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterCards();
+}}
+function filterCards() {{
+    const q = normStr(document.getElementById('q').value);
+    let visible = 0;
+    document.querySelectorAll('#cards .card').forEach(c => {{
+        const matchSub = (currentSub === 'all' || c.getAttribute('data-sub') === currentSub);
+        const matchText = normStr(c.textContent).includes(q);
+        const show = matchSub && matchText;
+        c.style.display = show ? 'flex' : 'none';
+        if (show) visible++;
+    }});
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+}}
+</script>
+"""
+save_file("warsztat/index.html", wrap_html("Tabele Warsztatowe: Kalkulator Farby, Betonu, Wiertła pod gwinty, Hartowanie", "Szybkie kalkulatory i tabele warsztatowe: kalkulator farby i betonu, średnice wierteł pod gwinty M2-M20, hartowanie stali, druk 3D.", WARSZTAT_INDEX, "warsztat/"))
+
+ROWER_INDEX = f"""
+<h1>🚲 Niezbędnik Rowerowy – Kalkulator Ciśnienia Startowego i Tabele</h1>
+<div class="timer-box" style="text-align:left;">
+    <h2 style="margin-top:0;" data-i18n="bike_calc_h2">Kalkulator ciśnienia startowego w oponach (Gravel / MTB / Szosa)</h2>
+    <p style="font-size:0.9rem;">Oblicza orientacyjny punkt wyjścia na podstawie <strong>masy całkowitej zestawu</strong> oraz szerokości opony.</p>
+    <label for="weight" data-i18n="bike_weight_lbl">Masa całkowita zestawu: kolarz + rower + ekwipunek (40 – 170 kg):</label>
+    <input type="text" inputmode="decimal" id="weight" value="105">
+    <label for="width" data-i18n="bike_width_lbl">Rzeczywista szerokość opony (mm):</label>
+    <select id="width">
+        <option value="25">25 mm (Szosa 700×25c / 25-622)</option>
+        <option value="28">28 mm (Szosa 700×28c / 28-622)</option>
+        <option value="32">32 mm (Road Plus 700×32c / 32-622)</option>
+        <option value="35">35 mm (Gravel 700×35c / 35-622)</option>
+        <option value="40" selected>40 mm (Gravel 700×40c / 40-622)</option>
+        <option value="45">45 mm (Gravel 700×45c / 45-622)</option>
+        <option value="50">50 mm (Monstercross / MTB 29×2.0 / 50-622)</option>
+        <option value="57">57 mm (MTB 29×2.25 / 57-622)</option>
+    </select>
+    <label for="setup" data-i18n="bike_setup_lbl">System montażu i typ obręczy:</label>
+    <select id="setup">
+        <option value="tube">Z dętką (obręcz standardowa Hooked)</option>
+        <option value="tubeless_hooked">Tubeless z mleczkiem (obręcz z haczykiem Hooked)</option>
+        <option value="tubeless_hookless">Tubeless na obręczy bezrantowej (HOOKLESS – limit 5.0 bar!)</option>
+    </select>
+    <button onclick="calcPressure()" data-i18n="bike_btn">Oblicz ciśnienie startowe</button>
+    <div id="calcWarn" class="alert-box alert-danger" style="display:none; margin-top:1rem;"></div>
+    <div id="res" class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label" data-i18n="bike_front">Przód (Startowe)</div><div class="val" id="pFront">2.5 bar</div></div>
+        <div class="param-item"><div class="label" data-i18n="bike_rear">Tył (Startowe)</div><div class="val" id="pRear">2.7 bar</div></div>
+    </div>
+    <p style="font-size:0.82rem; margin-top:0.5rem; margin-bottom:0;"><strong>Metoda i limity:</strong> Kalkulator przyjmuje rozkład masy ok. 46% przód / 54% tył oraz współczynnik objętości opony. Dla systemu Hookless automatycznie wymusza górny limit bezpieczeństwa <strong>5.0 bar (72.5 PSI)</strong>. Zawsze sprawdź dopuszczalne ciśnienie na ściance opony i obręczy.</p>
+</div>
+
+<h2>Wszystkie ściągi i tabele rowerowe</h2>
+<div class="filter-bar" role="group" aria-label="Filtr podkategorii rowerowych">
+    <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie (27)</button>
+    <button class="filter-btn" onclick="setSub('opony', this)">🛞 Opony i Mleczko (18)</button>
+    <button class="filter-btn" onclick="setSub('serwis', this)">🔧 Montaż i Napęd (5)</button>
+    <button class="filter-btn" onclick="setSub('dopasowanie', this)">📐 Dopasowanie i Trening (4)</button>
+</div>
+<label for="q">Szukaj w dziale rowerowym:</label>
+<input type="text" id="q" placeholder="🔍 Szukaj np. 40c, 40-622, mleczko, wosk, momenty Nm..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(rower_cards) + wosk_cross_card}
+</div>
+<div id="noRes" class="no-results">Brak pasujących pozycji rowerowych.</div>
+<script>
+function calcPressure() {{
+    const rawW = document.getElementById('weight').value.replace(',', '.');
+    let w = parseFloat(rawW);
+    const warnEl = document.getElementById('calcWarn');
+    warnEl.style.display = 'none';
+
+    if (isNaN(w) || w < 40 || w > 170) {{
+        warnEl.textContent = "⚠️ Podaj prawidłową masę całkowitą zestawu (kolarz + rower + ekwipunek) w zakresie od 40 do 170 kg.";
+        warnEl.style.display = 'block';
+        w = Math.min(170, Math.max(40, isNaN(w) ? 95 : w));
+        document.getElementById('weight').value = w;
+    }}
+
+    const width = parseFloat(document.getElementById('width').value) || 40;
+    const setup = document.getElementById('setup').value;
+    const isTl = setup.startsWith('tubeless');
+    const isHookless = (setup === 'tubeless_hookless');
+
+    let base = (w / (width * 1.48));
+    if (width <= 32) base *= 1.95;
+    if (isTl) base *= 0.88;
+
+    let front = Math.max(1.1, (base * 0.94));
+    let rear = Math.max(1.2, (base * 1.03));
+
+    if (isHookless) {{
+        if (width < 28) {{
+            warnEl.innerHTML = "🚨 <strong>UWAGA (Hookless):</strong> Większość producentów obręczy bezrantowych (Hookless) zabrania montażu opon węższych niż 28 mm (700×28c)! Sprawdź tabelę kompatybilności producenta kół. Maksymalne ciśnienie ograniczono do 5.0 bar.";
+            warnEl.style.display = 'block';
+        }} else if (front > 5.0 || rear > 5.0) {{
+            warnEl.innerHTML = "⚠️ <strong>Limit Hookless (5.0 bar):</strong> Wyliczone ciśnienie przekroczyło dopuszczalny limit dla obręczy bezrantowych. Wartość została ograniczona do maksymalnych 5.0 bar (72.5 PSI)!";
+            warnEl.style.display = 'block';
+        }}
+        front = Math.min(5.0, front);
+        rear = Math.min(5.0, rear);
+    }}
+
+    document.getElementById('pFront').textContent = front.toFixed(1) + " bar";
+    document.getElementById('pRear').textContent = rear.toFixed(1) + " bar";
+}}
+
+let currentSub = 'all';
+function setSub(sub, btn) {{
+    currentSub = sub;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterCards();
+}}
+function filterCards() {{
+    const q = normStr(document.getElementById('q').value);
+    let visible = 0;
+    document.querySelectorAll('#cards .card').forEach(c => {{
+        const matchSub = (currentSub === 'all' || c.getAttribute('data-sub') === currentSub);
+        const matchText = normStr(c.textContent).includes(q);
+        const show = matchSub && matchText;
+        c.style.display = show ? 'flex' : 'none';
+        if (show) visible++;
+    }});
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+}}
+calcPressure();
+</script>
+"""
+save_file("rower/index.html", wrap_html("Kalkulator Ciśnienia w Oponach i Tabele Rowerowe", "Oblicz ciśnienie startowe w oponach gravelowych, MTB i szosowych z uwzględnieniem limitów Hookless i masy zestawu.", ROWER_INDEX, "rower/"))
+
+LISTY_INDEX = f"""
+<h1>🎒 Interaktywne Listy Pakowania i Niezbędniki (Do druku A4 / PDF)</h1>
+<p>Wybierz sytuację poniżej, odhaczaj spakowane przedmioty bezpośrednio na telefonie, dopisuj własne rzeczy, drukuj czystą kartkę A4 lub prześlij odhaczoną listę linkiem do bliskich:</p>
+<label for="q">Szukaj listy lub niezbędnika:</label>
+<input type="text" id="q" placeholder="🔍 Szukaj np. obóz, kolonie, zimowisko, biwak, szpital, samolot, bikepacking, remont..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(listy_cards)}
+</div>
+<div id="noRes" class="no-results">Brak pasujących list pakowania.</div>
+<script>
+function filterCards() {{
+    const q = normStr(document.getElementById('q').value);
+    let visible = 0;
+    document.querySelectorAll('#cards .card').forEach(c => {{
+        const match = normStr(c.textContent).includes(q);
+        c.style.display = match ? 'flex' : 'none';
+        if (match) visible++;
+    }});
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+}}
+</script>
+"""
+save_file("listy/index.html", wrap_html("Listy Pakowania na Wyjazd, Obóz, Biwak i Niezbędniki Hobbystyczne", "Interaktywne checklisty do odhaczania na telefonie i druku A4/PDF: co zabrać na obóz, kolonie, zimowisko, biwak, do szpitala i na wyprawę rowerową.", LISTY_INDEX, "listy/"))
+
+# 11. Strona główna mojniezbednik.pl (4 główne działy + wyszukiwarka wszystkich 114 narzędzi)
+all_cards = listy_cards + kuchnia_cards + warsztat_cards + rower_cards
+
+HOME_BODY = f"""
+<h1 data-i18n="home_h1">⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy</h1>
+<p data-i18n="home_sub">Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:</p>
+<div class="grid" style="margin-bottom:2rem;">
+    <a href="/listy/" class="card" style="border-color:var(--accent);">
+        <span class="badge" data-i18n="cat_lists_b">12 interaktywnych list</span>
+        <h3 data-i18n="cat_lists_h">🎒 Listy i Niezbędniki</h3>
+        <p class="card-val" data-i18n="cat_lists_p">Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)</p>
+    </a>
+    <a href="/kuchnia/" class="card" style="border-color:var(--accent);">
+        <span class="badge" data-i18n="cat_kitch_b">38 pozycji</span>
+        <h3 data-i18n="cat_kitch_h">🍳 Kuchnia & Airfryer</h3>
+        <p class="card-val" data-i18n="cat_kitch_p">Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock</p>
+    </a>
+    <a href="/warsztat/" class="card" style="border-color:var(--accent);">
+        <span class="badge" data-i18n="cat_work_b">38 pozycji + Kalkulatory</span>
+        <h3 data-i18n="cat_work_h">🔧 Warsztat, Remont & DIY</h3>
+        <p class="card-val" data-i18n="cat_work_p">Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D</p>
+    </a>
+    <a href="/rower/" class="card" style="border-color:var(--accent);">
+        <span class="badge" data-i18n="cat_bike_b">26 pozycji + Kalkulator</span>
+        <h3 data-i18n="cat_bike_h">🚲 Rower & Serwis</h3>
+        <p class="card-val" data-i18n="cat_bike_p">Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm</p>
+    </a>
+</div>
+
+<h2 data-i18n="home_search_h">🔍 Wyszukiwarka wszystkich 114 narzędzi, kalkulatorów i list</h2>
+<label for="q" data-i18n="home_search_lbl">Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):</label>
+<input type="text" id="q" placeholder="Szukaj np. farba, beton, obóz, kurczak, M8, 1.2842, PETG, 40c..." oninput="filterHome()">
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem;">
+    <span id="viewStatus" style="font-size:0.9rem; color:var(--muted);">Wyświetlono: 20 wybranych narzędzi i list</span>
+    <button class="btn-secondary" id="toggleAllBtn" onclick="showAllTools()" style="padding:0.45rem 0.9rem; font-size:0.85rem;">Pokaż wszystkie 114 pozycji</button>
+</div>
+<div class="grid" id="homeCards">
+{''.join(all_cards)}
+</div>
+<div id="noRes" class="no-results">Nie znaleziono pasującego narzędzia. Sprawdź pisownię lub przejdź bezpośrednio do wybranego działu powyżej.</div>
+<script>
+let showingAll = false;
+const cards = Array.from(document.querySelectorAll('#homeCards .card'));
+const featuredIndices = new Set([0,1,2,3,4, 12,13,14,15,16, 50,51,52,53,54, 88,89,90,91,92]);
+
+function applyHomeView() {{
+    const q = normStr(document.getElementById('q').value);
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    let visible = 0;
+    cards.forEach((c, idx) => {{
+        if (q.length > 0) {{
+            const match = normStr(c.textContent).includes(q);
+            c.style.display = match ? 'flex' : 'none';
+            if (match) visible++;
+        }} else {{
+            const show = showingAll || featuredIndices.has(idx);
+            c.style.display = show ? 'flex' : 'none';
+            if (show) visible++;
+        }}
+    }});
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+    const statusEl = document.getElementById('viewStatus');
+    const btnEl = document.getElementById('toggleAllBtn');
+    if (q.length > 0) {{
+        statusEl.textContent = isEn ? ("Search results: found " + visible + " items") : ("Wyniki wyszukiwania: znaleziono " + visible + " pozycji");
+        btnEl.style.display = "none";
+    }} else {{
+        btnEl.style.display = "inline-block";
+        if (showingAll) {{
+            statusEl.textContent = isEn ? "Showing full catalog: all 114 tools & lists" : "Wyświetlono pełny katalog: wszystkie 114 narzędzi i list";
+            btnEl.textContent = isEn ? "Collapse to 20 featured" : "Zwiń do 20 wybranych";
+        }} else {{
+            statusEl.textContent = isEn ? "Showing: 20 featured tools across 4 categories" : "Wyświetlono: 20 wybranych pozycji z 4 działów";
+            btnEl.textContent = isEn ? "Show all 114 items" : "Pokaż wszystkie 114 pozycji";
+        }}
+    }}
+}}
+
+function filterHome() {{ applyHomeView(); }}
+function showAllTools() {{
+    showingAll = !showingAll;
+    applyHomeView();
+}}
+applyHomeView();
+</script>
+"""
+save_file("index.html", wrap_html("Szybkie Kalkulatory, Listy Pakowania, Czasy Airfryer i Tabele Warsztatowe", "Praktyczny niezbędnik online: kalkulator farby i betonu, listy rzeczy na obóz i biwak, czasy pieczenia w Airfryerze, tabele wierteł pod gwinty i kalkulator ciśnienia w oponach.", HOME_BODY, ""))
+
+# 12. Generowanie sitemap.xml (119 adresów URL) oraz robots.txt
+sitemap_entries = "\n".join([f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod></url>" for u in all_urls])
+SITEMAP_XML = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{sitemap_entries}
+</urlset>"""
+save_file("sitemap.xml", SITEMAP_XML)
+
+ROBOTS_TXT = f"""User-agent: *
+Allow: /
+Sitemap: {DOMAIN}/sitemap.xml
+"""
+save_file("robots.txt", ROBOTS_TXT)
+
+print(f"✅ GOTOWE! Wygenerowano łącznie {len(all_urls)} adresów URL w {BASE_DIR}")
