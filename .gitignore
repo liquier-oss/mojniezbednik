@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Stan generatora (daty zmian stron) - tylko na serwerze
+.build-state.json
