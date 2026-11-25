@@ -1,11 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import json
+import html
+import shutil
+import hashlib
+import subprocess
+from collections import Counter
 from datetime import date
 
-BASE_DIR = "/var/www/hub"
+BASE_DIR = os.environ.get("HUB_DIR", "/var/www/hub")  # HUB_DIR tylko do testów
 DOMAIN = "https://mojniezbednik.pl"
 TODAY = date.today().isoformat()
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE = os.path.join(SCRIPT_DIR, ".build-state.json")
+
+def _site_updated():
+    """Data ostatniej zmiany w repozytorium (commit), a nie dzień uruchomienia generatora."""
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%cs"], cwd=SCRIPT_DIR,
+                             capture_output=True, text=True, timeout=10).stdout.strip()
+        return out or TODAY
+    except Exception:
+        return TODAY
+
+SITE_UPDATED = _site_updated()
+
+# Stan z poprzedniego uruchomienia: skrót treści i data ostatniej realnej zmiany każdej strony
+try:
+    with open(STATE_FILE, encoding="utf-8") as f:
+        BUILD_STATE = json.load(f)
+except Exception:
+    BUILD_STATE = {}
+
+def pl_plural(n, one, few, many):
+    if n == 1:
+        return one
+    if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14):
+        return few
+    return many
 
 # 1. Tworzenie katalogów
 for sub in ["", "kuchnia", "warsztat", "rower", "listy"]:
@@ -13,8 +46,14 @@ for sub in ["", "kuchnia", "warsztat", "rower", "listy"]:
 
 def save_file(rel_path, content):
     full_path = os.path.join(BASE_DIR, rel_path)
+    data = content.strip() + "\n"
+    # Data w stopce nie liczy się jako zmiana treści strony
+    digest = hashlib.sha256(data.replace(SITE_UPDATED, "").encode("utf-8")).hexdigest()
+    prev = BUILD_STATE.get(rel_path, {})
+    lastmod = prev.get("lastmod", TODAY) if prev.get("hash") == digest else TODAY
+    BUILD_STATE[rel_path] = {"hash": digest, "lastmod": lastmod}
     with open(full_path, "w", encoding="utf-8") as f:
-        f.write(content.strip() + "\n")
+        f.write(data)
 
 # 2. Główny arkusz stylów (Poprawiony selektor * + styl przycisku języka)
 STYLE_CSS = """
@@ -385,10 +424,16 @@ footer {
 save_file("style.css", STYLE_CSS)
 
 # 3. Wspólny szablon HTML ze słownikiem PL/EN (My Toolbelt)
-def wrap_html(title, desc, body, canonical_path=""):
-    canonical_url = f"{DOMAIN}/{canonical_path}".rstrip("/")
-    if canonical_path == "":
-        canonical_url = f"{DOMAIN}/"
+def wrap_html(title, desc, body, canonical_path="", noindex=False):
+    canonical_url = f"{DOMAIN}/{canonical_path}"   # katalogi z "/" na końcu, tak jak w sitemap.xml
+    t_attr = html.escape(title, quote=True)
+    d_attr = html.escape(desc, quote=True)
+    if noindex:
+        head_index = '<meta name="robots" content="noindex">'
+        og_url = f"{DOMAIN}/"
+    else:
+        head_index = f'<link rel="canonical" href="{canonical_url}">'
+        og_url = canonical_url
 
     return f"""<!DOCTYPE html>
 <html lang="pl">
@@ -396,19 +441,33 @@ def wrap_html(title, desc, body, canonical_path=""):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title} | Mój Niezbędnik / My Toolbelt</title>
-    <meta name="description" content="{desc}">
-    <link rel="canonical" href="{canonical_url}">
+    <meta name="description" content="{d_attr}">
+    {head_index}
     <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#0f172a">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MójNiezbędnik.pl">
+    <meta property="og:locale" content="pl_PL">
+    <meta property="og:title" content="{t_attr}">
+    <meta property="og:description" content="{d_attr}">
+    <meta property="og:url" content="{og_url}">
+    <meta property="og:image" content="{DOMAIN}/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
 <header>
     <div class="nav-container">
         <a href="/" class="logo" id="siteLogo">⚡ MójNiezbędnik.pl</a>
         <nav aria-label="Główna nawigacja">
-            <a href="/kuchnia/" data-i18n="nav_kitchen">🍳 Kuchnia (38)</a>
-            <a href="/warsztat/" data-i18n="nav_workshop">🔧 Warsztat (38)</a>
-            <a href="/rower/" data-i18n="nav_bike">🚲 Rower (26)</a>
-            <a href="/listy/" data-i18n="nav_lists">🎒 Listy (12)</a>
+            <a href="/kuchnia/" data-i18n="nav_kitchen">🍳 Kuchnia ({N_KUCH})</a>
+            <a href="/warsztat/" data-i18n="nav_workshop">🔧 Warsztat ({N_WARS})</a>
+            <a href="/rower/" data-i18n="nav_bike">🚲 Rower ({N_ROW})</a>
+            <a href="/listy/" data-i18n="nav_lists">🎒 Listy ({N_LIST})</a>
             <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language PL/EN">🇬🇧 EN</button>
         </nav>
     </div>
@@ -420,7 +479,7 @@ def wrap_html(title, desc, body, canonical_path=""):
     <div class="footer-grid">
         <div>
             <h4 data-i18n="foot_about_h">O projekcie MójNiezbędnik.pl</h4>
-            <p data-i18n="foot_about_p">Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: <strong>{TODAY}</strong>.</p>
+            <p data-i18n="foot_about_p">Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: <strong>{SITE_UPDATED}</strong>.</p>
         </div>
         <div>
             <h4 data-i18n="foot_safe_h">Metodologia i bezpieczeństwo</h4>
@@ -431,7 +490,7 @@ def wrap_html(title, desc, body, canonical_path=""):
             <p><span data-i18n="foot_contact_p">Znalazłeś błąd w tabeli lub chcesz zasugerować nową listę? Napisz:</span> <a href="mailto:kontakt@mojniezbednik.pl" style="color:var(--accent);">kontakt@mojniezbednik.pl</a></p>
         </div>
     </div>
-    <p style="text-align:center; border-top:1px solid var(--border); padding-top:1rem;" data-i18n="foot_copy">© {TODAY[:4]} MójNiezbędnik.pl (My Toolbelt) – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.</p>
+    <p style="text-align:center; border-top:1px solid var(--border); padding-top:1rem;" data-i18n="foot_copy">© {SITE_UPDATED[:4]} MójNiezbędnik.pl (My Toolbelt) – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.</p>
 </footer>
 <script>
 function normStr(s) {{
@@ -444,32 +503,32 @@ function normStr(s) {{
 const I18N_DICT = {{
     pl: {{
         logo: "⚡ MójNiezbędnik.pl",
-        nav_kitchen: "🍳 Kuchnia (38)",
-        nav_workshop: "🔧 Warsztat (38)",
-        nav_bike: "🚲 Rower (26)",
-        nav_lists: "🎒 Listy (12)",
+        nav_kitchen: "🍳 Kuchnia ({N_KUCH})",
+        nav_workshop: "🔧 Warsztat ({N_WARS})",
+        nav_bike: "🚲 Rower ({N_ROW})",
+        nav_lists: "🎒 Listy ({N_LIST})",
         foot_about_h: "O projekcie MójNiezbędnik.pl",
-        foot_about_p: "Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: {TODAY}.",
+        foot_about_p: "Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: {SITE_UPDATED}.",
         foot_safe_h: "Metodologia i bezpieczeństwo",
         foot_safe_p: "Podane wartości mają charakter orientacyjny (punkty wyjścia). Przed wykonaniem prac elektrycznych, obróbki cieplnej czy montażu komponentów rowerowych zawsze sprawdź dokumentację producenta i normy branżowe.",
         foot_contact_h: "Kontakt i zgłaszanie uwag",
         foot_contact_p: "Znalazłeś błąd w tabeli lub chcesz zasugerować nową listę? Napisz:",
-        foot_copy: "© {TODAY[:4]} MójNiezbędnik.pl – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.",
+        foot_copy: "© {SITE_UPDATED[:4]} MójNiezbędnik.pl – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.",
         home_h1: "⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy",
         home_sub: "Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:",
-        cat_lists_b: "12 interaktywnych list",
+        cat_lists_b: "{LIST_BADGE}",
         cat_lists_h: "🎒 Listy i Niezbędniki",
         cat_lists_p: "Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)",
-        cat_kitch_b: "38 pozycji",
+        cat_kitch_b: "{KUCH_POZ}",
         cat_kitch_h: "🍳 Kuchnia & Airfryer",
         cat_kitch_p: "Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock",
-        cat_work_b: "38 pozycji + Kalkulatory",
+        cat_work_b: "{WARS_POZ} + Kalkulatory",
         cat_work_h: "🔧 Warsztat, Remont & DIY",
         cat_work_p: "Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D",
-        cat_bike_b: "26 pozycji + Kalkulator",
+        cat_bike_b: "{ROW_POZ} + Kalkulator",
         cat_bike_h: "🚲 Rower & Serwis",
         cat_bike_p: "Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm",
-        home_search_h: "🔍 Wyszukiwarka wszystkich 114 narzędzi, kalkulatorów i list",
+        home_search_h: "🔍 Wyszukiwarka wszystkich {N_ALL} narzędzi, kalkulatorów i list",
         home_search_lbl: "Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):",
         paint_h2: "🎨 Kalkulator Farby (Ile litrów na pokój / ściany?)",
         paint_desc: "Wpisz łączną powierzchnię do pomalowania, odejmij okna/drzwi i oblicz potrzebną ilość farby wraz z 10% zapasem.",
@@ -497,32 +556,32 @@ const I18N_DICT = {{
     }},
     en: {{
         logo: "⚡ My Toolbelt (mojniezbednik.pl)",
-        nav_kitchen: "🍳 Kitchen (38)",
-        nav_workshop: "🔧 Workshop (38)",
-        nav_bike: "🚲 Cycling (26)",
-        nav_lists: "🎒 Checklists (12)",
+        nav_kitchen: "🍳 Kitchen ({N_KUCH})",
+        nav_workshop: "🔧 Workshop ({N_WARS})",
+        nav_bike: "🚲 Cycling ({N_ROW})",
+        nav_lists: "🎒 Checklists ({N_LIST})",
         foot_about_h: "About My Toolbelt (MójNiezbędnik.pl)",
-        foot_about_p: "No-fluff collection of practical workshop tables, calculators, airfryer timers, and printable A4 checklists. Last updated: {TODAY}.",
+        foot_about_p: "No-fluff collection of practical workshop tables, calculators, airfryer timers, and printable A4 checklists. Last updated: {SITE_UPDATED}.",
         foot_safe_h: "Methodology & Safety",
         foot_safe_p: "Provided values are starting reference points. Always verify manufacturer documentation and local building/electrical codes before performing work.",
         foot_contact_h: "Contact & Feedback",
         foot_contact_p: "Found an error or want to suggest a new tool? Email us:",
-        foot_copy: "© {TODAY[:4]} MójNiezbędnik.pl (My Toolbelt) – Zero tracking cookies. Checklist states are saved locally on your device.",
+        foot_copy: "© {SITE_UPDATED[:4]} MójNiezbędnik.pl (My Toolbelt) – Zero tracking cookies. Checklist states are saved locally on your device.",
         home_h1: "⚡ My Toolbelt – No-Fluff Workshop, Kitchen & Cycling Calculators",
         home_sub: "Quick reference tables, starting parameters, and printable checklists without endless SEO stories. Choose a category or search below:",
-        cat_lists_b: "12 interactive checklists",
+        cat_lists_b: "{N_LIST} interactive checklists",
         cat_lists_h: "🎒 Packing Lists & Kits",
         cat_lists_p: "Camping, bikepacking, carry-on luggage, blackout kit, and DIY toolbelt (A4 Print / PDF)",
-        cat_kitch_b: "38 items",
+        cat_kitch_b: "{N_KUCH} items",
         cat_kitch_h: "🍳 Kitchen & Airfryer",
         cat_kitch_p: "Reference cooking times, food safety temps (74°C for poultry) + Wake Lock timer",
-        cat_work_b: "38 items + Calculators",
+        cat_work_b: "{N_WARS} items + Calculators",
         cat_work_h: "🔧 Workshop, Renovation & DIY",
         cat_work_p: "Paint & concrete calculators, tap drill sizes M2–M20, steel heat treating, 3D printing",
-        cat_bike_b: "26 items + Calculator",
+        cat_bike_b: "{N_ROW} items + Calculator",
         cat_bike_h: "🚲 Cycling & Bike Wrench",
         cat_bike_p: "Tire pressure calculator (Hooked / Hookless), tubeless sealant dosage, torque specs (Nm)",
-        home_search_h: "🔍 Search all 114 tools, calculators & checklists",
+        home_search_h: "🔍 Search all {N_ALL} tools, calculators & checklists",
         home_search_lbl: "Type a keyword (e.g. paint, concrete, m8, 1.2842, petg, 40c, chicken):",
         paint_h2: "🎨 Paint Calculator (How many liters for a room / walls?)",
         paint_desc: "Enter total wall/ceiling area, subtract doors/windows, and calculate required paint volume including a 10% safety margin.",
@@ -583,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {{
 </body>
 </html>"""
 
-# 4. Baza danych: Kuchnia (38), Warsztat (36 + 2 kalkulatory = 38), Rower (26), Listy (12)
+# 4. Baza danych: Kuchnia, Warsztat (+ 2 kalkulatory), Rower, Listy – liczniki liczone automatycznie (N_*)
 KUCHNIA_ITEMS = [
     ("frytki-mrozone", "Frytki mrożone w Airfryerze", 200, 16, "Porcja ok. 300–400 g (jedna warstwa, bez rozmrażania). Potrząśnij koszem w połowie czasu (po 8 min). Czas zależy od grubości frytek (cienkie 12–14 min, grube stekowe do 18 min)."),
     ("frytki-domowe", "Frytki z surowych ziemniaków w Airfryerze", 195, 22, "Słupki ok. 1x1 cm, porcja 350 g. Namocz pokrojone ziemniaki w zimnej wodzie przez 20 minut, dokładnie osusz ręcznikiem papierowym i wymieszaj z 1 łyżką oleju."),
@@ -1119,6 +1178,20 @@ calcPaint();
 calcMortar();
 </script>
 """
+
+# Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
+N_KUCH = len(KUCHNIA_ITEMS)
+N_WARS = len(WARSZTAT_ITEMS) + 2          # + kalkulator farby i zaprawy
+N_ROW = len(ROWER_ITEMS)
+N_LIST = len(LISTY_ITEMS)
+N_ALL = N_KUCH + N_WARS + N_ROW + N_LIST
+SUBW = Counter(x[5] for x in WARSZTAT_ITEMS)
+SUBR = Counter(x[5] for x in ROWER_ITEMS)
+KUCH_POZ = f"{N_KUCH} {pl_plural(N_KUCH, 'pozycja', 'pozycje', 'pozycji')}"
+WARS_POZ = f"{N_WARS} {pl_plural(N_WARS, 'pozycja', 'pozycje', 'pozycji')}"
+ROW_POZ = f"{N_ROW} {pl_plural(N_ROW, 'pozycja', 'pozycje', 'pozycji')}"
+LIST_BADGE = f"{N_LIST} {pl_plural(N_LIST, 'interaktywna lista', 'interaktywne listy', 'interaktywnych list')}"
+ALL_POZ = f"{N_ALL} {pl_plural(N_ALL, 'pozycja', 'pozycje', 'pozycji')}"
 
 all_urls = [
     f"{DOMAIN}/",
@@ -1695,12 +1768,12 @@ WARSZTAT_INDEX = f"""
 <h2>Wszystkie tabele warsztatowe i budowlane</h2>
 <p>Wybierz podkategorię poniżej lub wpisz szukany parametr (np. M8, farba, beton, 1.2842, PETG, 1:50):</p>
 <div class="filter-bar" role="group" aria-label="Filtr podkategorii warsztatowych">
-    <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie (38)</button>
-    <button class="filter-btn" onclick="setSub('gwinty', this)">🔩 Gwinty (12)</button>
-    <button class="filter-btn" onclick="setSub('stal', this)">🔥 Stal i Hartowanie (6)</button>
-    <button class="filter-btn" onclick="setSub('druk3d', this)">🖨️ Druk 3D (6)</button>
-    <button class="filter-btn" onclick="setSub('elektryka', this)">⚡ Elektryka (6)</button>
-    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki (8)</button>
+    <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie ({N_WARS})</button>
+    <button class="filter-btn" onclick="setSub('gwinty', this)">🔩 Gwinty ({SUBW['gwinty']})</button>
+    <button class="filter-btn" onclick="setSub('stal', this)">🔥 Stal i Hartowanie ({SUBW['stal']})</button>
+    <button class="filter-btn" onclick="setSub('druk3d', this)">🖨️ Druk 3D ({SUBW['druk3d']})</button>
+    <button class="filter-btn" onclick="setSub('elektryka', this)">⚡ Elektryka ({SUBW['elektryka']})</button>
+    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki ({SUBW['przeliczniki'] + 2})</button>
 </div>
 <label for="q">Szukaj w warsztacie:</label>
 <input type="text" id="q" placeholder="🔍 Wpisz np. farba, beton, m8, 440c, nmv, petg, wallbox..." oninput="filterCards()">
@@ -1767,10 +1840,10 @@ ROWER_INDEX = f"""
 
 <h2>Wszystkie ściągi i tabele rowerowe</h2>
 <div class="filter-bar" role="group" aria-label="Filtr podkategorii rowerowych">
-    <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie (27)</button>
-    <button class="filter-btn" onclick="setSub('opony', this)">🛞 Opony i Mleczko (18)</button>
-    <button class="filter-btn" onclick="setSub('serwis', this)">🔧 Montaż i Napęd (5)</button>
-    <button class="filter-btn" onclick="setSub('dopasowanie', this)">📐 Dopasowanie i Trening (4)</button>
+    <button class="filter-btn active" onclick="setSub('all', this)">Wszystkie ({N_ROW + 1})</button>
+    <button class="filter-btn" onclick="setSub('opony', this)">🛞 Opony i Mleczko ({SUBR['opony']})</button>
+    <button class="filter-btn" onclick="setSub('serwis', this)">🔧 Montaż i Napęd ({SUBR['serwis'] + 1})</button>
+    <button class="filter-btn" onclick="setSub('dopasowanie', this)">📐 Dopasowanie i Trening ({SUBR['dopasowanie']})</button>
 </div>
 <label for="q">Szukaj w dziale rowerowym:</label>
 <input type="text" id="q" placeholder="🔍 Szukaj np. 40c, 40-622, mleczko, wosk, momenty Nm..." oninput="filterCards()">
@@ -1868,7 +1941,7 @@ function filterCards() {{
 """
 save_file("listy/index.html", wrap_html("Listy Pakowania na Wyjazd, Obóz, Biwak i Niezbędniki Hobbystyczne", "Interaktywne checklisty do odhaczania na telefonie i druku A4/PDF: co zabrać na obóz, kolonie, zimowisko, biwak, do szpitala i na wyprawę rowerową.", LISTY_INDEX, "listy/"))
 
-# 11. Strona główna mojniezbednik.pl (4 główne działy + wyszukiwarka wszystkich 114 narzędzi)
+# 11. Strona główna mojniezbednik.pl (4 główne działy + wyszukiwarka wszystkich narzędzi)
 all_cards = listy_cards + kuchnia_cards + warsztat_cards + rower_cards
 
 HOME_BODY = f"""
@@ -1876,33 +1949,33 @@ HOME_BODY = f"""
 <p data-i18n="home_sub">Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:</p>
 <div class="grid" style="margin-bottom:2rem;">
     <a href="/listy/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_lists_b">12 interaktywnych list</span>
+        <span class="badge" data-i18n="cat_lists_b">{LIST_BADGE}</span>
         <h3 data-i18n="cat_lists_h">🎒 Listy i Niezbędniki</h3>
         <p class="card-val" data-i18n="cat_lists_p">Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)</p>
     </a>
     <a href="/kuchnia/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_kitch_b">38 pozycji</span>
+        <span class="badge" data-i18n="cat_kitch_b">{KUCH_POZ}</span>
         <h3 data-i18n="cat_kitch_h">🍳 Kuchnia & Airfryer</h3>
         <p class="card-val" data-i18n="cat_kitch_p">Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock</p>
     </a>
     <a href="/warsztat/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_work_b">38 pozycji + Kalkulatory</span>
+        <span class="badge" data-i18n="cat_work_b">{WARS_POZ} + Kalkulatory</span>
         <h3 data-i18n="cat_work_h">🔧 Warsztat, Remont & DIY</h3>
         <p class="card-val" data-i18n="cat_work_p">Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D</p>
     </a>
     <a href="/rower/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_bike_b">26 pozycji + Kalkulator</span>
+        <span class="badge" data-i18n="cat_bike_b">{ROW_POZ} + Kalkulator</span>
         <h3 data-i18n="cat_bike_h">🚲 Rower & Serwis</h3>
         <p class="card-val" data-i18n="cat_bike_p">Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm</p>
     </a>
 </div>
 
-<h2 data-i18n="home_search_h">🔍 Wyszukiwarka wszystkich 114 narzędzi, kalkulatorów i list</h2>
+<h2 data-i18n="home_search_h">🔍 Wyszukiwarka wszystkich {N_ALL} narzędzi, kalkulatorów i list</h2>
 <label for="q" data-i18n="home_search_lbl">Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):</label>
 <input type="text" id="q" placeholder="Szukaj np. farba, beton, obóz, kurczak, M8, 1.2842, PETG, 40c..." oninput="filterHome()">
 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem;">
     <span id="viewStatus" style="font-size:0.9rem; color:var(--muted);">Wyświetlono: 20 wybranych narzędzi i list</span>
-    <button class="btn-secondary" id="toggleAllBtn" onclick="showAllTools()" style="padding:0.45rem 0.9rem; font-size:0.85rem;">Pokaż wszystkie 114 pozycji</button>
+    <button class="btn-secondary" id="toggleAllBtn" onclick="showAllTools()" style="padding:0.45rem 0.9rem; font-size:0.85rem;">Pokaż wszystkie {ALL_POZ}</button>
 </div>
 <div class="grid" id="homeCards">
 {''.join(all_cards)}
@@ -1937,11 +2010,11 @@ function applyHomeView() {{
     }} else {{
         btnEl.style.display = "inline-block";
         if (showingAll) {{
-            statusEl.textContent = isEn ? "Showing full catalog: all 114 tools & lists" : "Wyświetlono pełny katalog: wszystkie 114 narzędzi i list";
+            statusEl.textContent = isEn ? "Showing full catalog: all {N_ALL} tools & lists" : "Wyświetlono pełny katalog: wszystkie {N_ALL} narzędzi i list";
             btnEl.textContent = isEn ? "Collapse to 20 featured" : "Zwiń do 20 wybranych";
         }} else {{
             statusEl.textContent = isEn ? "Showing: 20 featured tools across 4 categories" : "Wyświetlono: 20 wybranych pozycji z 4 działów";
-            btnEl.textContent = isEn ? "Show all 114 items" : "Pokaż wszystkie 114 pozycji";
+            btnEl.textContent = isEn ? "Show all {N_ALL} items" : "Pokaż wszystkie {ALL_POZ}";
         }}
     }}
 }}
@@ -1956,8 +2029,26 @@ applyHomeView();
 """
 save_file("index.html", wrap_html("Szybkie Kalkulatory, Listy Pakowania, Czasy Airfryer i Tabele Warsztatowe", "Praktyczny niezbędnik online: kalkulator farby i betonu, listy rzeczy na obóz i biwak, czasy pieczenia w Airfryerze, tabele wierteł pod gwinty i kalkulator ciśnienia w oponach.", HOME_BODY, ""))
 
-# 12. Generowanie sitemap.xml (119 adresów URL) oraz robots.txt
-sitemap_entries = "\n".join([f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod></url>" for u in all_urls])
+# 12. Strona 404, sitemap.xml (z prawdziwymi datami zmian) oraz robots.txt
+NOT_FOUND_BODY = """
+<h1>404 – Nie ma takiej strony</h1>
+<p>Ten adres nie istnieje albo został zmieniony. Wybierz dział lub skorzystaj z wyszukiwarki na stronie głównej.</p>
+<div class="grid" style="margin-top:1.5rem;">
+    <a href="/" class="card"><h3>⚡ Strona główna i wyszukiwarka</h3></a>
+    <a href="/listy/" class="card"><h3>🎒 Listy i Niezbędniki</h3></a>
+    <a href="/kuchnia/" class="card"><h3>🍳 Kuchnia & Airfryer</h3></a>
+    <a href="/warsztat/" class="card"><h3>🔧 Warsztat, Remont & DIY</h3></a>
+    <a href="/rower/" class="card"><h3>🚲 Rower & Serwis</h3></a>
+</div>
+"""
+save_file("404.html", wrap_html("Nie znaleziono strony (404)", "Ta strona nie istnieje. Przejdź do działów MójNiezbędnik.pl.", NOT_FOUND_BODY, noindex=True))
+
+def _lastmod_for(url):
+    rel = url[len(DOMAIN):].lstrip("/")
+    file_rel = rel + "index.html" if (rel == "" or rel.endswith("/")) else rel
+    return BUILD_STATE.get(file_rel, {}).get("lastmod", TODAY)
+
+sitemap_entries = "\n".join([f"  <url><loc>{u}</loc><lastmod>{_lastmod_for(u)}</lastmod></url>" for u in all_urls])
 SITEMAP_XML = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {sitemap_entries}
@@ -1969,5 +2060,20 @@ Allow: /
 Sitemap: {DOMAIN}/sitemap.xml
 """
 save_file("robots.txt", ROBOTS_TXT)
+
+# 13. Pliki statyczne z repozytorium: favicon, ikona na ekran główny, obrazek do udostępniania
+STATIC_DIR = os.path.join(SCRIPT_DIR, "static")
+if os.path.isdir(STATIC_DIR):
+    for name in sorted(os.listdir(STATIC_DIR)):
+        src = os.path.join(STATIC_DIR, name)
+        if os.path.isfile(src):
+            shutil.copy2(src, os.path.join(BASE_DIR, name))
+
+# 14. Zapis stanu (daty zmian stron) na następne uruchomienie
+try:
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(BUILD_STATE, f, ensure_ascii=False, indent=0, sort_keys=True)
+except OSError as e:
+    print(f"Uwaga: nie zapisano {STATE_FILE}: {e}")
 
 print(f"✅ GOTOWE! Wygenerowano łącznie {len(all_urls)} adresów URL w {BASE_DIR}")
