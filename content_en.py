@@ -413,6 +413,47 @@ LISTS_EN = {
             "A charged home fire extinguisher and a first aid kit",
         ]),
     ]),
+    "torba-do-porodu": ("hospital-bag-for-labour-checklist", "Hospital bag for labour and birth – printable checklist", "🏥 Home & Safety", "A checklist for your birth bag: documents, things for mum during labour and after the birth, for the newborn and for the birth partner. Check your hospital's own list first – many provide nappies or baby clothes.", [
+        ("📄 Documents (ideally in one folder)", [
+            "Photo ID",
+            "Maternity notes / pregnancy record",
+            "Pregnancy test results: blood group and Rh, antibodies, GBS, HIV, hepatitis B and C, syphilis, latest blood count and urine test, scan reports",
+            "Hospital referral or admission letter (if you have one) and your birth plan (if you've made one)",
+            "List of medicines you take and any allergies",
+        ]),
+        ("🤰 For mum – during labour", [
+            "Loose nightdress for labour (ideally front-opening) or a large T-shirt",
+            "Dressing gown and warm socks",
+            "Non-slip flip-flops for the shower",
+            "Still water in a sports-cap bottle or with a straw",
+            "Light snacks (check your hospital's rules on eating during labour)",
+            "Hair tie or clip, lip balm",
+            "Phone and a charger with a long cable (2–3 m) or a power bank",
+        ]),
+        ("🛏️ For mum – after the birth", [
+            "2–3 nursing nightdresses (front-opening)",
+            "Nursing bras (2) and breast pads",
+            "Maternity pads and postpartum underwear (mesh or disposable)",
+            "2 towels (large and small)",
+            "Toiletry bag: toothbrush, toothpaste, gentle intimate wash, deodorant",
+            "Nipple cream (e.g. lanolin)",
+            "Loose, comfortable clothes for going home",
+        ]),
+        ("👶 For the newborn", [
+            "Newborn nappies (size 1) – if the hospital doesn't provide them",
+            "Baby wipes, or cotton wool and water",
+            "3–4 bodysuits or sleepsuits (newborn / 0–3 months)",
+            "Hat and socks",
+            "Going-home outfit suited to the weather + a blanket",
+            "Infant car seat – fitted in the car before the birth!",
+        ]),
+        ("🧑 For the birth partner", [
+            "ID and a comfortable change of clothes",
+            "Slippers or spare shoes (if the hospital requires them)",
+            "Snacks, water, a phone charger",
+            "Change or a card for parking and vending machines",
+        ]),
+    ]),
     "dom-przed-wyjazdem-na-urlop": ("home-checklist-before-holiday", "Securing your home before you go on holiday – checklist", "🏠 Home & Safety", "A quick checklist before you lock the door for a holiday or a long weekend.", [
         ("🚰 Water, gas and electricity", [
             "Main water valve turned off (and the supply to the washing machine and dishwasher)",
