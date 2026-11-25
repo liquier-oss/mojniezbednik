@@ -775,9 +775,9 @@ WARSZTAT_ITEMS = [
     ("jaki-kabel-do-garazu-warsztatu-sila", "Kabel ziemny do garażu / warsztatu (400V) – warunki doboru", "Dobór zależny od mocy, długości i układu sieci", "Przykładowo YKY 5×4 mm² / 5×6 mm² / 5×10 mm²", "Sam próg odległości (np. 30 m) nie wystarcza do doboru kabla! Należy obliczyć spadek napięcia, sprawdzić warunek samoczynnego wyłączenia zasilania (impedancję pętli zwarcia) oraz uwzględnić przyszłe obciążenia.", "elektryka"),
     ("jaki-kabel-do-piekarnika-elektrycznego", "Obwód do piekarnika elektrycznego (ok. 3.5 kW) – warunki", "Typowo: dedykowany obwód 3×2.5 mm² Cu", "Zabezpieczenie wg instrukcji urządzenia i pomiarów (np. B16A)", "Urządzenia stałe o mocy powyżej 2 kW prowadzi się na wydzielonych obwodach z rozdzielnicy. Zawsze sprawdź wytyczne w instrukcji montażu producenta.", "elektryka"),
     ("jaki-kabel-do-ladowarki-wallbox-11kw", "Obwód do ładowarki Wallbox 11 kW (3×16A) – warunki i RCD", "Dobór wg trasy (często min. 5×4 mm² lub 5×6 mm² Cu)", "Wymagana ochrona przed prądem upływu DC > 6 mA!", "UWAGA: Zapis 'RCD typu A/B' jest błędnym skrótem! Zgodnie z normą PN-HD 60364-7-722 wymagany jest wyłącznik różnicowoprądowy typu B LUB wyłącznik typu A współpracujący z certyfikowanym członem detekcji prądu stałego 6 mA DC.", "elektryka"),
-    ("proporcje-mieszanki-paliwowej-1-50", "Mieszanka paliwowa 1:50 (Ile oleju 2T na 5L benzyny?)", "100 ml oleju na 5 L benzyny", "Na 1 litr: 20 ml | Na 2 litry: 40 ml | Na 3 litry: 60 ml", "Proporcja 1:50 (2%) dotyczy zazwyczaj markowych olejów syntetycznych/półsyntetycznych w nowoczesnych pilarkach i kosach. Zawsze nadrzędna jest instrukcja obsługi Twojego silnika.", "przeliczniki"),
-    ("proporcje-mieszanki-paliwowej-1-40", "Mieszanka paliwowa 1:40 (Ile oleju 2T na 5L benzyny?)", "125 ml oleju na 5 L benzyny", "Na 1 litr: 25 ml | Na 2 litry: 50 ml | Na 3 litry: 75 ml", "Proporcja 1:40 (2.5%) bywa stosowana w okresie docierania silnika lub przy ciężkiej pracy w wysokich temperaturach, jeśli zaleca to producent.", "przeliczniki"),
-    ("proporcje-mieszanki-paliwowej-1-25", "Mieszanka paliwowa 1:25 (Ile oleju 2T na 5L benzyny?)", "200 ml oleju na 5 L benzyny", "Na 1 litr: 40 ml | Na 2 litry: 80 ml | Na 3 litry: 120 ml", "Proporcja 1:25 (4%) wymagana w starszych konstrukcjach dwusuwowych oraz części budżetowych kos i pilarek spalinowych.", "przeliczniki"),
+    ("proporcje-mieszanki-paliwowej-1-50", "Mieszanka 1:50 – ile oleju na 5 l benzyny? (100 ml)", "100 ml oleju na 5 L benzyny", "Na 1 litr: 20 ml | Na 2 litry: 40 ml | Na 3 litry: 60 ml", "Proporcja 1:50 (2%) dotyczy zazwyczaj markowych olejów syntetycznych/półsyntetycznych w nowoczesnych pilarkach i kosach. Zawsze nadrzędna jest instrukcja obsługi Twojego silnika.", "przeliczniki"),
+    ("proporcje-mieszanki-paliwowej-1-40", "Mieszanka 1:40 – ile oleju na 5 l benzyny? (125 ml)", "125 ml oleju na 5 L benzyny", "Na 1 litr: 25 ml | Na 2 litry: 50 ml | Na 3 litry: 75 ml", "Proporcja 1:40 (2.5%) bywa stosowana w okresie docierania silnika lub przy ciężkiej pracy w wysokich temperaturach, jeśli zaleca to producent.", "przeliczniki"),
+    ("proporcje-mieszanki-paliwowej-1-25", "Mieszanka 1:25 – ile oleju na 5 l benzyny? (200 ml)", "200 ml oleju na 5 L benzyny", "Na 1 litr: 40 ml | Na 2 litry: 80 ml | Na 3 litry: 120 ml", "Proporcja 1:25 (4%) wymagana w starszych konstrukcjach dwusuwowych oraz części budżetowych kos i pilarek spalinowych.", "przeliczniki"),
     ("rozmiar-klucza-do-sruby-m6-m8-m10-m12", "Tabela rozmiarów klucza do śrub M6, M8, M10, M12 (DIN vs ISO)", "M6=10mm | M8=13mm", "M10: 17mm (DIN 933) lub 16mm (ISO 4017) | M12: 19mm (DIN) lub 18mm (ISO)", "Zwróć uwagę na normę śruby: nowsza norma ISO 4017 zmniejsza wymiar pod klucz dla M10 (z 17 na 16 mm), M12 (z 19 na 18 mm) oraz M14 (z 22 na 21 mm) względem starszej normy DIN 933.", "przeliczniki"),
     ("przelicznik-momentu-nm-na-kgm", "Przelicznik momentu obrotowego: Nm na kgm (kGm)", "10 Nm ≈ 1.02 kgm", "1 kgm ≈ 9.81 Nm (100 Nm ≈ 10.20 kgm)", "Po zakończeniu pracy kluczem dynamometrycznym sprężynowym ustaw podziałkę na najniższą wartość skali, aby nie odkształcać sprężyny pomiarowej.", "przeliczniki"),
     ("wosk-do-lancucha-proporcje-parafina-ptfe", "Domowy wosk do łańcucha rowerowego: Proporcje i temperatura", "500 g parafiny + 5 g dodatku (PTFE / MoS2 / WS2)", "Temperatura kąpieli: 75–85°C (w wolnowarze lub kąpieli wodnej)", "Nie podgrzewaj parafiny bezpośrednio na otwartym ogniu ani płycie! Kluczem do trwałości jest 100% odtłuszczenie nowego łańcucha z fabrycznego smaru (w benzynie ekstrakcyjnej i alkoholu IPA).", "przeliczniki")
@@ -1288,7 +1288,7 @@ PAINT_HTML, MORTAR_HTML, CALC_JS = _split_calc(PAINT_AND_MORTAR_WIDGET)
 
 # Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
 N_KUCH = len(KUCHNIA_ITEMS) + 2           # + przelicznik piekarnik -> Airfryer i miar kuchennych
-N_WARS = len(WARSZTAT_ITEMS) + 4          # + kalkulatory: farba, zaprawa, płytki, panele
+N_WARS = len(WARSZTAT_ITEMS) + 5          # + kalkulatory: farba, zaprawa, płytki, panele, mieszanka 2T
 N_ROW = len(ROWER_ITEMS)
 N_LIST = len(LISTY_ITEMS)
 N_ALL = N_KUCH + N_WARS + N_ROW + N_LIST
@@ -1307,7 +1307,7 @@ from content_en import WORKSHOP_EN, CYCLING_EN, CALC_EN, KITCHEN_EN, LISTS_EN
 
 assert set(WORKSHOP_EN) <= {x[0] for x in WARSZTAT_ITEMS}, "content_en: nieznany slug warsztatu"
 assert set(CYCLING_EN) <= {x[0] for x in ROWER_ITEMS}, "content_en: nieznany slug rowerowy"
-N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN) + 2
+N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN) + 3
 N_ROW_EN = len(CYCLING_EN)
 assert set(KITCHEN_EN) <= {x[0] for x in KUCHNIA_ITEMS}, "content_en: nieznany slug kuchni"
 assert set(LISTS_EN) <= {x[0] for x in LISTY_ITEMS}, "content_en: nieznany slug listy"
@@ -1323,6 +1323,7 @@ _pair("warsztat/", "en/workshop/")
 _pair("rower/", "en/cycling/")
 _pair("warsztat/kalkulator-plytek-fugi-kleju.html", "en/workshop/tile-grout-adhesive-calculator.html")
 _pair("warsztat/kalkulator-paneli-podlogowych.html", "en/workshop/laminate-flooring-calculator.html")
+_pair("warsztat/kalkulator-mieszanki-paliwowej-2t.html", "en/workshop/2-stroke-fuel-mix-calculator.html")
 _pair("kuchnia/", "en/kitchen/")
 _pair("kuchnia/przelicznik-piekarnik-airfryer.html", "en/kitchen/oven-to-air-fryer-converter.html")
 _pair("kuchnia/przelicznik-miar-kuchennych.html", "en/kitchen/cups-to-grams-converter.html")
@@ -1954,6 +1955,85 @@ save_file(floor_rel, wrap_html("Kalkulator paneli podłogowych: ile paczek, podk
 <p style="margin-top:1.5rem;"><a href="/{tiles_rel}" class="btn btn-secondary">🧱 Kalkulator płytek</a> <a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
 """, floor_rel))
 
+
+# 7c. Kalkulator mieszanki paliwowej 2T (PL i EN)
+FUEL_RATIOS = [25, 32, 40, 50, 100]
+FUEL_LITRES = [1, 2, 3, 5, 10, 20]
+
+def fuel_table(lang):
+    head = "<tr><th>" + ("Benzyna" if lang == "pl" else "Petrol") + "</th>" + "".join(f"<th>1:{r}</th>" for r in FUEL_RATIOS) + "</tr>"
+    rows = "".join("<tr><td>" + f"{l} l" + "</td>" + "".join(f"<td>{round(l * 1000 / r):g} ml</td>" for r in FUEL_RATIOS) + "</tr>" for l in FUEL_LITRES)
+    return f'<div class="table-wrap"><table class="rel-table fuel-table"><thead>{head}</thead><tbody>{rows}</tbody></table></div>'
+
+def fuel_widget(lang):
+    if lang == "en":
+        L = dict(h2="⛽ 2-Stroke Fuel Mix Calculator", litres="Petrol (litres):", ratio="Mix ratio:", res="2-stroke oil", per="That is", perb="ml per 1 litre.")
+    else:
+        L = dict(h2="⛽ Kalkulator mieszanki paliwowej 2T", litres="Benzyna (litry):", ratio="Proporcja:", res="Olej 2T", per="To", perb="ml na 1 litr.")
+    opts = "".join(f'<option value="{r}"{" selected" if r == 50 else ""}>1:{r} ({100 / r:g}%)</option>' for r in FUEL_RATIOS)
+    return f"""
+<div class="timer-box" style="text-align:left;" id="fuelBox">
+    <h2 style="margin-top:0;">{L['h2']}</h2>
+    <div class="form-row">
+        <div><label for="fuL">{L['litres']}</label><input type="text" inputmode="decimal" id="fuL" value="5" oninput="calcFuel()"></div>
+        <div><label for="fuR">{L['ratio']}</label><select id="fuR" onchange="calcFuel()">{opts}</select></div>
+    </div>
+    <div class="param-box" style="margin-top:0.5rem;" aria-live="polite">
+        <div class="param-item"><div class="label">{L['res']}</div><div class="val" id="fuRes">100 ml</div></div>
+    </div>
+    <p id="fuNote" style="font-size:0.9rem; margin-bottom:0;"></p>
+</div>
+<script>
+function calcFuel() {{
+    const l = parseFloat((document.getElementById('fuL').value || '').replace(',', '.')) || 0;
+    const r = parseFloat(document.getElementById('fuR').value) || 50;
+    const ml = l * 1000 / r;
+    document.getElementById('fuRes').textContent = (Math.round(ml * 10) / 10).toString().replace('.', {"','" if lang == "pl" else "'.'"}) + ' ml';
+    document.getElementById('fuNote').textContent = '{L['per']} ' + (Math.round(1000 / r * 10) / 10).toString().replace('.', {"','" if lang == "pl" else "'.'"}) + ' {L['perb']}';
+}}
+calcFuel();
+</script>
+"""
+
+FUEL_TIPS = {
+    "pl": """
+<h2>Którą proporcję wybrać?</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Zawsze decyduje instrukcja silnika</strong> – proporcja jest zwykle podana w instrukcji i na korku zbiornika.</li>
+        <li><strong>1:50 (2%)</strong> – najczęściej nowoczesne pilarki, kosy i dmuchawy na markowym oleju syntetycznym lub półsyntetycznym.</li>
+        <li><strong>1:40 (2,5%)</strong> – część urządzeń, docieranie silnika lub praca w upale, jeśli producent to dopuszcza.</li>
+        <li><strong>1:25 (4%)</strong> – starsze konstrukcje i część tańszych kos oraz pilarek.</li>
+        <li><strong>Mieszaj w kanistrze, nie w zbiorniku:</strong> najpierw olej, potem benzyna, i wstrząśnij. Mieszanka traci właściwości po kilku tygodniach – nie rób jej na zapas.</li>
+    </ul>
+</div>""",
+    "en": """
+<h2>Which ratio should you use?</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Your engine manual always decides</strong> – the ratio is usually in the manual and on the fuel cap.</li>
+        <li><strong>50:1 (2%)</strong> – most modern chainsaws, trimmers and blowers with quality synthetic or semi-synthetic oil.</li>
+        <li><strong>40:1 (2.5%)</strong> – some machines, engine break-in or hard work in hot weather, if the manufacturer allows it.</li>
+        <li><strong>25:1 (4%)</strong> – older designs and some budget trimmers and chainsaws.</li>
+        <li><strong>Mix in a can, not in the tank:</strong> oil first, then petrol, and shake. Mixed fuel goes stale after a few weeks – don't make it far in advance.</li>
+    </ul>
+</div>""",
+}
+
+fuel_rel = "warsztat/kalkulator-mieszanki-paliwowej-2t.html"
+all_urls.append(f"{DOMAIN}/{fuel_rel}")
+warsztat_cards.append(f'<a href="/{fuel_rel}" class="card" data-sub="przeliczniki"><span class="badge">⛽ Przeliczniki</span><h3>Kalkulator mieszanki paliwowej 2T: ile oleju na litr benzyny?</h3><p class="card-val">1:25, 1:32, 1:40, 1:50, 1:100  |  tabela 1–20 l</p></a>')
+save_file(fuel_rel, wrap_html("Ile oleju na 5 l benzyny? Kalkulator mieszanki 2T 1:25, 1:40, 1:50", "Ile oleju 2T dodać do benzyny? Kalkulator mieszanki 1:25, 1:32, 1:40, 1:50 i 1:100 oraz tabela dla 1–20 litrów (np. 1:50 = 100 ml na 5 l).", f"""
+<div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » Kalkulator mieszanki 2T</div>
+<h1>Kalkulator mieszanki paliwowej 2T – ile oleju na litr benzyny?</h1>
+<p>Na 5 litrów benzyny: przy 1:50 dodajesz 100 ml oleju 2T, przy 1:40 – 125 ml, przy 1:25 – 200 ml. Dla innych ilości użyj kalkulatora albo tabeli.</p>
+{fuel_widget("pl")}
+<h2>Tabela: ile ml oleju na ile litrów benzyny</h2>
+{fuel_table("pl")}
+{FUEL_TIPS["pl"]}
+<p style="margin-top:1.5rem;"><a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
+""", fuel_rel))
+
 SUB_LABELS_W = {
     "gwinty": "🔩 Gwinty",
     "stal": "🔥 Obróbka cieplna",
@@ -1991,6 +2071,8 @@ for slug, title, val1, val2, tip, sub_cat in WARSZTAT_ITEMS:
                 <li><strong>Gwinty drobnozwojne:</strong> Przed wierceniem zawsze zmierz skok gwintu śruby grzebieniem pomiarowym (szczególnie przy średnicach od M8 wzwyż w motoryzacji i częściach rowerowych).</li>
             </ul>
         </div>"""
+    elif slug.startswith("proporcje-mieszanki-paliwowej"):
+        extra_alert = """<div class="alert-box">⛽ Inna ilość benzyny albo proporcja? <a href="/warsztat/kalkulator-mieszanki-paliwowej-2t.html" style="color:var(--accent); font-weight:700;">Kalkulator mieszanki 2T z tabelą 1–20 l →</a></div>"""
     elif sub_cat == "stal":
         extra_alert = """<div class="alert-box"><strong>🔥 Uwaga technologiczna:</strong> Parametry obróbki cieplnej są orientacyjnymi zakresami katalogowymi. Przed hartowaniem zawsze zweryfikuj kartę materiałową (atest) od dostawcy danej partii stali.</div>"""
         conditions_html = """
@@ -2036,7 +2118,9 @@ for slug, title, val1, val2, tip, sub_cat in WARSZTAT_ITEMS:
     {related_html}
     <p style="margin-top:1.5rem;"><a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
     """
-    save_file(rel_url, wrap_html(title, f"{title} – orientacyjny parametr ({val1}) wraz z warunkami zastosowania.", body, rel_url))
+    desc_pl = (f"{title.split(' – ')[0]}: {val1}. {val2}. Tabela i kalkulator mieszanki 2T." if slug.startswith("proporcje-mieszanki-paliwowej")
+               else f"{title} – orientacyjny parametr ({val1}) wraz z warunkami zastosowania.")
+    save_file(rel_url, wrap_html(title, desc_pl, body, rel_url))
 
 # 8. Generowanie podstron Rower
 rower_cards = []
@@ -2375,7 +2459,7 @@ WARSZTAT_INDEX = f"""
     <button class="filter-btn" onclick="setSub('stal', this)">🔥 Stal i Hartowanie ({SUBW['stal']})</button>
     <button class="filter-btn" onclick="setSub('druk3d', this)">🖨️ Druk 3D ({SUBW['druk3d']})</button>
     <button class="filter-btn" onclick="setSub('elektryka', this)">⚡ Elektryka ({SUBW['elektryka']})</button>
-    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki ({SUBW['przeliczniki'] + 4})</button>
+    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki ({SUBW['przeliczniki'] + 5})</button>
 </div>
 <label for="q">Szukaj w warsztacie:</label>
 <input type="text" id="q" placeholder="🔍 Wpisz np. farba, beton, m8, 440c, nmv, petg, wallbox..." oninput="filterCards()">
@@ -2728,6 +2812,21 @@ save_file(floor_rel_en, wrap_html("Laminate and Vinyl Flooring Calculator: Packs
 <p style="margin-top:1.5rem;"><a href="/{tiles_rel_en}" class="btn btn-secondary">🧱 Tile calculator</a> <a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
 """, floor_rel_en, lang="en"))
 
+
+fuel_rel_en = "en/workshop/2-stroke-fuel-mix-calculator.html"
+all_urls.append(f"{DOMAIN}/{fuel_rel_en}")
+workshop_cards_en.append(f'<a href="/{fuel_rel_en}" class="card" data-sub="przeliczniki"><span class="badge">⛽ Conversions</span><h3>2-Stroke Fuel Mix Calculator: how much oil per litre?</h3><p class="card-val">25:1, 32:1, 40:1, 50:1, 100:1  |  chart 1–20 L</p></a>')
+save_file(fuel_rel_en, wrap_html("2-Stroke Fuel Mix Calculator: How Much Oil for 5 Litres? (25:1, 40:1, 50:1)", "How much 2-stroke oil to add to petrol? Calculator for 25:1, 32:1, 40:1, 50:1 and 100:1 plus a chart for 1–20 litres (e.g. 50:1 = 100 ml per 5 L).", f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » 2-Stroke Fuel Mix Calculator</div>
+<h1>2-Stroke Fuel Mix Calculator – How Much Oil per Litre of Petrol?</h1>
+<p>For 5 litres of petrol: at 50:1 add 100 ml of 2-stroke oil, at 40:1 – 125 ml, at 25:1 – 200 ml. For other amounts use the calculator or the chart (1 US gallon ≈ 3.79 L).</p>
+{fuel_widget("en")}
+<h2>Chart: ml of oil per litres of petrol</h2>
+{fuel_table("en")}
+{FUEL_TIPS["en"]}
+<p style="margin-top:1.5rem;"><a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
+""", fuel_rel_en, lang="en"))
+
 SUB_LABELS_W_EN = {
     "gwinty": "🔩 Threads",
     "stal": "🔥 Heat treatment",
@@ -2777,6 +2876,8 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in WARSZTAT_ITEMS:
     badge_txt = SUB_LABELS_W_EN.get(sub_cat, "🔧 Workshop")
     workshop_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="{sub_cat}"><span class="badge">{badge_txt}</span><h3>{title}</h3><p class="card-val">{val1}  |  {val2}</p></a>')
     extra_alert = ""
+    if slug.startswith("proporcje-mieszanki-paliwowej"):
+        extra_alert = """<div class="alert-box">⛽ Different amount or ratio? <a href="/en/workshop/2-stroke-fuel-mix-calculator.html" style="color:var(--accent); font-weight:700;">2-stroke fuel mix calculator with a 1–20 L chart →</a></div>"""
     if sub_cat == "stal":
         extra_alert = """<div class="alert-box"><strong>🔥 Technical note:</strong> heat-treatment parameters are typical catalogue ranges. Before hardening, always check the material data sheet (certificate) from the supplier of your batch of steel.</div>"""
     related_html = related_table(
@@ -2870,7 +2971,7 @@ SUBR_EN = Counter(x[5] for x in ROWER_ITEMS if x[0] in CYCLING_EN)
 
 workshop_filters_en = [f"""<button class="filter-btn active" onclick="setSub('all', this)">All ({N_WARS_EN})</button>"""]
 for _sub, _label in SUB_LABELS_W_EN.items():
-    _n = SUBW_EN.get(_sub, 0) + (len(CALC_EN) + 2 if _sub == "przeliczniki" else 0)
+    _n = SUBW_EN.get(_sub, 0) + (len(CALC_EN) + 3 if _sub == "przeliczniki" else 0)
     if _n:
         workshop_filters_en.append(f"""<button class="filter-btn" onclick="setSub('{_sub}', this)">{_label} ({_n})</button>""")
 
