@@ -41,7 +41,7 @@ def pl_plural(n, one, few, many):
     return many
 
 # 1. Tworzenie katalogów
-for sub in ["", "kuchnia", "warsztat", "rower", "listy", "en", "en/workshop", "en/cycling"]:
+for sub in ["", "kuchnia", "warsztat", "rower", "listy", "en", "en/workshop", "en/cycling", "en/kitchen", "en/checklists"]:
     os.makedirs(os.path.join(BASE_DIR, sub), exist_ok=True)
 
 def save_file(rel_path, content):
@@ -475,8 +475,10 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
     <div class="nav-container">
         <a href="/en/" class="logo" id="siteLogo">⚡ My Toolbelt</a>
         <nav aria-label="Main navigation">
+            <a href="/en/kitchen/">🍳 Kitchen ({N_KUCH_EN})</a>
             <a href="/en/workshop/">🔧 Workshop ({N_WARS_EN})</a>
             <a href="/en/cycling/">🚲 Cycling ({N_ROW_EN})</a>
+            <a href="/en/checklists/">🎒 Checklists ({N_LIST_EN})</a>
             <a class="lang-btn" href="{switch_href}" hreflang="pl" lang="pl" title="Wersja polska">🇵🇱 PL</a>
         </nav>
     </div>
@@ -485,7 +487,7 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
     <div class="footer-grid">
         <div>
             <h4>About My Toolbelt</h4>
-            <p>A no-fluff collection of practical workshop tables, calculators and cycling reference values. Last updated: <strong>{SITE_UPDATED}</strong>.</p>
+            <p>A no-fluff collection of practical workshop and cycling tables, calculators, air fryer times and printable checklists. Last updated: <strong>{SITE_UPDATED}</strong>.</p>
         </div>
         <div>
             <h4>Methodology &amp; safety</h4>
@@ -1141,12 +1143,16 @@ ALL_POZ = f"{N_ALL} {pl_plural(N_ALL, 'pozycja', 'pozycje', 'pozycji')}"
 # 4b. Wersja angielska (My Toolbelt): treści w content_en.py, powiązania adresów PL <-> EN
 import sys
 sys.path.insert(0, SCRIPT_DIR)
-from content_en import WORKSHOP_EN, CYCLING_EN, CALC_EN
+from content_en import WORKSHOP_EN, CYCLING_EN, CALC_EN, KITCHEN_EN, LISTS_EN
 
 assert set(WORKSHOP_EN) <= {x[0] for x in WARSZTAT_ITEMS}, "content_en: nieznany slug warsztatu"
 assert set(CYCLING_EN) <= {x[0] for x in ROWER_ITEMS}, "content_en: nieznany slug rowerowy"
 N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN)
 N_ROW_EN = len(CYCLING_EN)
+assert set(KITCHEN_EN) <= {x[0] for x in KUCHNIA_ITEMS}, "content_en: nieznany slug kuchni"
+assert set(LISTS_EN) <= {x[0] for x in LISTY_ITEMS}, "content_en: nieznany slug listy"
+N_KUCH_EN = len(KITCHEN_EN)
+N_LIST_EN = len(LISTS_EN)
 
 def _pair(pl_rel, en_rel):
     ALT_PL2EN[pl_rel] = en_rel
@@ -1155,6 +1161,12 @@ def _pair(pl_rel, en_rel):
 _pair("", "en/")
 _pair("warsztat/", "en/workshop/")
 _pair("rower/", "en/cycling/")
+_pair("kuchnia/", "en/kitchen/")
+_pair("listy/", "en/checklists/")
+for _slug, _v in KITCHEN_EN.items():
+    _pair(f"kuchnia/{_slug}.html", f"en/kitchen/{_v[0]}.html")
+for _slug, _v in LISTS_EN.items():
+    _pair(f"listy/{_slug}.html", f"en/checklists/{_v[0]}.html")
 for _pl_rel, _v in CALC_EN.items():
     _pair(_pl_rel, _v[0])
 for _slug, _v in WORKSHOP_EN.items():
@@ -2324,10 +2336,451 @@ calcPressure();
 """
 save_file("en/cycling/index.html", wrap_html("Tyre Pressure Calculator and Cycling Tables", "Calculate starting tyre pressure for gravel, MTB and road tyres, with hookless limits and total system weight.", CYCLING_INDEX_EN, "en/cycling/", lang="en"))
 
+# 11c. Kitchen (EN) – kopia sekcji 6 z angielskimi tekstami
+kitchen_cards_en = []
+for slug, _title_pl, temp, mins, _tip_pl in KUCHNIA_ITEMS:
+    if slug not in KITCHEN_EN:
+        continue
+    en_slug, title, tip = KITCHEN_EN[slug]
+    rel_url = f"en/kitchen/{en_slug}.html"
+    all_urls.append(f"{DOMAIN}/{rel_url}")
+    kitchen_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="airfryer"><span class="badge">🍳 Air fryer</span><h3>{title}</h3><p class="card-val">🌡️ {temp}°C  |  ⏱️ ~{mins} min</p></a>')
+    
+    is_meat = any(k in slug for k in ["kurczak", "udka", "skrzydelka", "nuggetsy", "karkowka", "schabowy", "mielone", "stek", "burger", "losos", "dorsz"])
+    safety_banner = ""
+    if is_meat:
+        safety_banner = """<div class="alert-box alert-danger"><strong>🌡️ Food safety:</strong> the time is only approximate and depends on the thickness of the portion and the starting temperature of the meat. For poultry always check doneness with a kitchen thermometer in the thickest part – the safe internal temperature is <strong>at least 74°C (165°F)</strong>.</div>"""
+
+    body = f"""
+    <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/kitchen/">Kitchen</a> » {title}</div>
+    <h1>{title} – Time and Temperature</h1>
+    <p>A starting point for air fryers. Adjust the time to the portion size and the power of your appliance.</p>
+    {safety_banner}
+    <div class="param-box">
+        <div class="param-item"><div class="label">Starting temperature</div><div class="val">{temp}°C <small style="font-size:0.55em; color:var(--muted);">({round(temp * 9 / 5 + 32)}°F)</small></div></div>
+        <div class="param-item"><div class="label">Approximate time</div><div class="val">~{mins} min</div></div>
+    </div>
+    <div class="timer-box">
+        <div class="wakelock-status" id="wlStatus">ℹ️ Screen wake lock: off (turns on when you press Start)</div>
+        <div class="timer-display" id="timer" aria-live="polite">{mins:02d}:00</div>
+        <div>
+            <button id="startBtn" onclick="toggleTimer({mins*60})">▶ Start</button>
+            <button class="btn-secondary" onclick="resetTimer({mins*60})">↺ Reset</button>
+        </div>
+    </div>
+    <h2>💡 Preparation and tips</h2>
+    <div class="info-box"><p>{tip}</p></div>
+    <h2>How to check doneness</h2>
+    <div class="info-box">
+        <ul>
+            <li><strong>Basket loading:</strong> the time assumes a single layer with hot air flowing freely. With a full basket add 20–30% to the time and shake the contents.</li>
+            <li><strong>Starting state:</strong> food straight from the freezer or very thick pieces need longer to cook through.</li>
+            <li><strong>Check before the end:</strong> look into the drawer 2–3 minutes before the time is up, and use a probe thermometer for meat and poultry.</li>
+        </ul>
+    </div>
+    <p style="margin-top:1.5rem;"><a href="/en/kitchen/" class="btn">← Back to the full air fryer table</a></p>
+    <script>
+    let interval = null, wakeLock = null, timeLeft = {mins*60}, isRunning = false;
+    const wlEl = document.getElementById('wlStatus');
+    const timerEl = document.getElementById('timer');
+    const startBtn = document.getElementById('startBtn');
+
+    async function requestWakeLock() {{
+        if (!('wakeLock' in navigator)) {{
+            wlEl.textContent = "⚠️ Your browser doesn't support screen wake lock – the screen may turn off.";
+            return;
+        }}
+        try {{
+            wakeLock = await navigator.wakeLock.request('screen');
+            wlEl.textContent = "🔒 Screen wake lock: ON";
+            wlEl.style.color = "#10b981";
+            wakeLock.addEventListener('release', () => {{
+                if (isRunning) {{
+                    wlEl.textContent = "⚠️ Screen wake lock was released (e.g. you switched tabs).";
+                    wlEl.style.color = "#f59e0b";
+                }}
+            }});
+        }} catch (err) {{
+            wlEl.textContent = "⚠️ Couldn't keep the screen on (" + err.name + ").";
+            wlEl.style.color = "#f59e0b";
+        }}
+    }}
+
+    function releaseWakeLock() {{
+        if (wakeLock !== null) {{
+            wakeLock.release().catch(() => {{}});
+            wakeLock = null;
+        }}
+        wlEl.textContent = "ℹ️ Screen wake lock: off";
+        wlEl.style.color = "#cbd5e1";
+    }}
+
+    document.addEventListener('visibilitychange', () => {{
+        if (wakeLock !== null && document.visibilityState === 'visible' && isRunning) {{
+            requestWakeLock();
+        }}
+    }});
+
+    function playBeep() {{
+        try {{
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [0, 0.3, 0.6].forEach(delay => {{
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.2);
+            }});
+        }} catch(e) {{}}
+    }}
+
+    function updateDisplay() {{
+        const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+        const s = String(timeLeft % 60).padStart(2, '0');
+        timerEl.textContent = m + ":" + s;
+    }}
+
+    function toggleTimer(defaultSec) {{
+        if (isRunning) {{
+            clearInterval(interval);
+            isRunning = false;
+            startBtn.textContent = "▶ Resume";
+            releaseWakeLock();
+            return;
+        }}
+        if (timeLeft <= 0) timeLeft = defaultSec;
+        isRunning = true;
+        startBtn.textContent = "⏸ Pause";
+        requestWakeLock();
+        interval = setInterval(() => {{
+            timeLeft--;
+            if (timeLeft <= 0) {{
+                clearInterval(interval);
+                isRunning = false;
+                timerEl.textContent = "DONE! 🔔";
+                startBtn.textContent = "▶ Start";
+                releaseWakeLock();
+                playBeep();
+                return;
+            }}
+            updateDisplay();
+        }}, 1000);
+    }}
+
+    function resetTimer(defaultSec) {{
+        clearInterval(interval);
+        isRunning = false;
+        timeLeft = defaultSec;
+        updateDisplay();
+        startBtn.textContent = "▶ Start";
+        releaseWakeLock();
+    }}
+    </script>
+    """
+    save_file(rel_url, wrap_html(title, f"{title}: approximate temperature ({temp}°C / {round(temp * 9 / 5 + 32)}°F), time (~{mins} min), safety tips and an online timer.", body, rel_url, lang="en"))
+
+
+# 11d. Checklists (EN) – kopia sekcji 9 z angielskimi tekstami
+lists_cards_en = []
+for slug, *_pl in LISTY_ITEMS:
+    if slug not in LISTS_EN:
+        continue
+    en_slug, title, badge_cat, desc, groups = LISTS_EN[slug]
+    rel_url = f"en/checklists/{en_slug}.html"
+    all_urls.append(f"{DOMAIN}/{rel_url}")
+    total_items = sum(len(items) for _, items in groups)
+    lists_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="checklista"><span class="badge">{badge_cat}</span><h3>{title}</h3><p class="card-val">☑️ {total_items} items  |  🖨️ Print A4 / PDF</p></a>')
+
+    groups_html = ""
+    item_idx = 0
+    for g_title, g_items in groups:
+        lis = ""
+        for it in g_items:
+            lis += f'<li class="item-row" data-idx="{item_idx}"><input type="checkbox"><span>{it}</span></li>\n'
+            item_idx += 1
+        groups_html += f"""
+        <div class="checklist-group">
+            <div class="group-title">{g_title}</div>
+            <ul class="item-list">
+                {lis}
+            </ul>
+        </div>"""
+
+    body = f"""
+    <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/checklists/">Checklists</a> » {title}</div>
+    <h1>{title}</h1>
+    <p>{desc} Tick things off as you pack – the list is saved automatically on your device. You can also add your own items, print a clean A4 sheet or send the current state to family as a link.</p>
+
+    <div class="checklist-action-bar">
+        <div style="flex: 1 1 200px;">
+            <strong id="counter" style="color:var(--accent); font-size:1.05rem;">Done: 0 / {total_items} (0%)</strong>
+            <div class="progress-wrap"><div class="progress-bar" id="progBar"></div></div>
+        </div>
+        <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            <button onclick="window.print()">🖨️ Print / PDF</button>
+            <button class="btn-secondary" onclick="shareUrl()" id="shareBtn">🔗 Share progress</button>
+            <button class="btn-secondary" onclick="sendViaEmail()">✉️ Send by email</button>
+            <button class="btn-secondary" onclick="resetList()">↺ Clear</button>
+        </div>
+    </div>
+
+    {groups_html}
+
+    <div class="checklist-group">
+        <div class="group-title">➕ Your own items (added to the list)</div>
+        <div class="add-custom-box">
+            <input type="text" id="customInput" placeholder="Add your own item (e.g. favourite teddy, watch charger)..." onkeydown="if(event.key==='Enter') addCustomItem()">
+            <button onclick="addCustomItem()" style="white-space:nowrap;">+ Add item</button>
+        </div>
+        <ul class="item-list" id="customList"></ul>
+    </div>
+
+    <p style="margin-top:2rem;"><a href="/en/checklists/" class="btn">← See all checklists</a></p>
+
+    <script>
+    const STORAGE_KEY = "mn_list_en_{en_slug}_v1";
+
+    function getStored() {{
+        try {{
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {{ checked: [], custom: [], customChecked: [] }};
+        }} catch(e) {{
+            return {{ checked: [], custom: [], customChecked: [] }};
+        }}
+    }}
+
+    function saveStored(data) {{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }}
+
+    function updateStats() {{
+        const allRows = document.querySelectorAll('.item-row');
+        const checkedRows = document.querySelectorAll('.item-row.checked');
+        const total = allRows.length;
+        const done = checkedRows.length;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        document.getElementById('counter').textContent = `Packed / done: ${{done}} / ${{total}} (${{pct}}%)`;
+        document.getElementById('progBar').style.width = pct + "%";
+    }}
+
+    function syncToStorage() {{
+        const data = getStored();
+        const checkedIdx = [];
+        document.querySelectorAll('.item-row[data-idx]').forEach(row => {{
+            if (row.classList.contains('checked')) {{
+                checkedIdx.push(parseInt(row.getAttribute('data-idx'), 10));
+            }}
+        }});
+        const customChecked = [];
+        document.querySelectorAll('#customList .item-row').forEach(row => {{
+            if (row.classList.contains('checked')) {{
+                customChecked.push(row.getAttribute('data-custom'));
+            }}
+        }});
+        data.checked = checkedIdx;
+        data.customChecked = customChecked;
+        saveStored(data);
+        updateStats();
+    }}
+
+    function bindRowEvents(row) {{
+        const cb = row.querySelector('input[type="checkbox"]');
+        row.addEventListener('click', (e) => {{
+            if (e.target.tagName === 'SMALL') return;
+            if (e.target !== cb) cb.checked = !cb.checked;
+            if (cb.checked) row.classList.add('checked');
+            else row.classList.remove('checked');
+            syncToStorage();
+        }});
+    }}
+
+    function renderCustomItem(text, isChecked) {{
+        const ul = document.getElementById('customList');
+        const li = document.createElement('li');
+        li.className = 'item-row' + (isChecked ? ' checked' : '');
+        li.setAttribute('data-custom', text);
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isChecked;
+        const span = document.createElement('span');
+        span.textContent = text;
+        const delBtn = document.createElement('small');
+        delBtn.textContent = '✖ Remove';
+        delBtn.style.cssText = 'margin-left:auto; color:var(--danger); cursor:pointer; font-weight:700; padding:0.2rem 0.4rem;';
+        delBtn.onclick = (e) => {{
+            e.stopPropagation();
+            const d = getStored();
+            d.custom = (d.custom || []).filter(t => t !== text);
+            d.customChecked = (d.customChecked || []).filter(t => t !== text);
+            saveStored(d);
+            li.remove();
+            updateStats();
+        }};
+        li.appendChild(cb);
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        ul.appendChild(li);
+        bindRowEvents(li);
+    }}
+
+    function addCustomItem() {{
+        const inp = document.getElementById('customInput');
+        const val = inp.value.trim();
+        if (!val) return;
+        const data = getStored();
+        if (!data.custom) data.custom = [];
+        if (!data.custom.includes(val)) {{
+            data.custom.push(val);
+            saveStored(data);
+            renderCustomItem(val, false);
+            inp.value = "";
+            updateStats();
+        }}
+    }}
+
+    function initChecklist() {{
+        let data = getStored();
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('c')) {{
+            const fromUrl = params.get('c').split(',').map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+            data.checked = fromUrl;
+            if (params.has('add')) {{
+                const added = params.get('add').split('|').map(s => s.trim()).filter(Boolean);
+                added.forEach(item => {{
+                    if (!data.custom.includes(item)) data.custom.push(item);
+                }});
+            }}
+            saveStored(data);
+        }}
+
+        document.querySelectorAll('.item-row[data-idx]').forEach(row => {{
+            const idx = parseInt(row.getAttribute('data-idx'), 10);
+            const cb = row.querySelector('input[type="checkbox"]');
+            if ((data.checked || []).includes(idx)) {{
+                cb.checked = true;
+                row.classList.add('checked');
+            }}
+            bindRowEvents(row);
+        }});
+
+        (data.custom || []).forEach(txt => {{
+            const isC = (data.customChecked || []).includes(txt);
+            renderCustomItem(txt, isC);
+        }});
+
+        updateStats();
+    }}
+
+    function shareUrl() {{
+        const data = getStored();
+        const url = new URL(window.location.origin + window.location.pathname);
+        if (data.checked && data.checked.length > 0) {{
+            url.searchParams.set('c', data.checked.join(','));
+        }}
+        if (data.custom && data.custom.length > 0) {{
+            url.searchParams.set('add', data.custom.join('|'));
+        }}
+        const shareLink = url.toString();
+        if (navigator.clipboard) {{
+            navigator.clipboard.writeText(shareLink).then(() => {{
+                const btn = document.getElementById('shareBtn');
+                btn.textContent = "✅ Link copied!";
+                setTimeout(() => {{ btn.textContent = "🔗 Share progress"; }}, 2500);
+            }});
+        }} else {{
+            prompt("Copy this link with the state of your list:", shareLink);
+        }}
+    }}
+
+    function sendViaEmail() {{
+        let body = "{title} (My Toolbelt – mojniezbednik.pl):\\n\\n";
+        document.querySelectorAll('.checklist-group').forEach(grp => {{
+            const gTitle = grp.querySelector('.group-title').textContent.trim();
+            const rows = grp.querySelectorAll('.item-row');
+            if (rows.length > 0) {{
+                body += "=== " + gTitle + " ===\\n";
+                rows.forEach(r => {{
+                    const mark = r.classList.contains('checked') ? "[X]" : "[ ]";
+                    const txt = r.querySelector('span').textContent.trim();
+                    body += `${{mark}} ${{txt}}\\n`;
+                }});
+                body += "\\n";
+            }}
+        }});
+        body += "Link to the interactive list: " + window.location.href;
+        window.location.href = `mailto:?subject=${{encodeURIComponent("{title}")}}&body=${{encodeURIComponent(body)}}`;
+    }}
+
+    function resetList() {{
+        if (confirm("Are you sure you want to untick all items on this list?")) {{
+            const data = getStored();
+            data.checked = [];
+            data.customChecked = [];
+            saveStored(data);
+            document.querySelectorAll('.item-row').forEach(r => {{
+                r.classList.remove('checked');
+                r.querySelector('input[type="checkbox"]').checked = false;
+            }});
+            if (window.history.replaceState) {{
+                window.history.replaceState(null, null, window.location.pathname);
+            }}
+            updateStats();
+        }}
+    }}
+
+    initChecklist();
+    </script>
+    """
+    save_file(rel_url, wrap_html(title, f"{title} – interactive checklist that saves your progress, prints on A4/PDF and can be sent by email.", body, rel_url, lang="en"))
+
+
+
+KITCHEN_INDEX_EN = f"""
+<h1>🍳 Kitchen Reference – Air Fryer Times and Temperatures</h1>
+<p>Type a food below to filter the list:</p>
+<div class="alert-box"><strong>Tip:</strong> all times are approximate for a single layer in the basket. When cooking poultry, always check the internal temperature with a thermometer (at least 74°C / 165°F).</div>
+<label for="q">Search for a food:</label>
+<input type="text" id="q" placeholder="🔍 e.g. fries, chicken, salmon, eggs..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(kitchen_cards_en)}
+</div>
+<div id="noRes" class="no-results">No matching items. Try a different word.</div>
+{FILTER_JS_EN}
+"""
+all_urls.append(f"{DOMAIN}/en/kitchen/")
+save_file("en/kitchen/index.html", wrap_html("Air Fryer Cooking Times and Temperatures Chart", "Approximate air fryer cooking times and temperatures with a built-in timer and doneness checks.", KITCHEN_INDEX_EN, "en/kitchen/", lang="en"))
+
+CHECKLISTS_INDEX_EN = f"""
+<h1>🎒 Packing Lists and Checklists – Printable and Interactive</h1>
+<p>Tick items off on your phone (your progress is saved on the device), add your own items, print on A4 or send the list by email. Type below to filter:</p>
+<label for="q">Search the lists:</label>
+<input type="text" id="q" placeholder="🔍 e.g. camp, ski, camping, carry-on, hospital, bikepacking..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(lists_cards_en)}
+</div>
+<div id="noRes" class="no-results">No matching checklist.</div>
+{FILTER_JS_EN}
+"""
+all_urls.append(f"{DOMAIN}/en/checklists/")
+save_file("en/checklists/index.html", wrap_html("Packing Lists for Trips, Camping and Hobbies – Printable Checklists", "Interactive checklists to tick off on your phone and print on A4/PDF: summer camp, ski trip, camping, carry-on luggage, hospital bag, bikepacking and more.", CHECKLISTS_INDEX_EN, "en/checklists/", lang="en"))
+
 HOME_BODY_EN = f"""
-<h1>⚡ My Toolbelt – No-Fluff Workshop &amp; Cycling Calculators</h1>
+<h1>⚡ My Toolbelt – No-Fluff Calculators, Tables and Checklists</h1>
 <p>Quick reference tables and starting parameters with their conditions of use – without endless introductions. Choose a section or search below:</p>
 <div class="grid" style="margin-bottom:2rem;">
+    <a href="/en/checklists/" class="card" style="border-color:var(--accent);">
+        <span class="badge">{N_LIST_EN} interactive checklists</span>
+        <h3>🎒 Packing Lists &amp; Checklists</h3>
+        <p>Summer camp, ski trip, camping, carry-on, bikepacking, hospital bag (print A4 / PDF)</p>
+    </a>
+    <a href="/en/kitchen/" class="card">
+        <span class="badge">{N_KUCH_EN} items</span>
+        <h3>🍳 Kitchen &amp; Air Fryer</h3>
+        <p>Approximate times, food-safety temperatures (74°C / 165°F for poultry) + a timer that keeps the screen on</p>
+    </a>
     <a href="/en/workshop/" class="card">
         <span class="badge">{N_WARS_EN} items + calculators</span>
         <h3>🔧 Workshop, Renovation &amp; DIY</h3>
@@ -2340,14 +2793,13 @@ HOME_BODY_EN = f"""
     </a>
 </div>
 
-<h2>🔍 Search all {N_WARS_EN + N_ROW_EN} tools and tables</h2>
-<label for="q">Type what you're looking for (e.g. paint, concrete, m8, d2, petg, 40c, sealant):</label>
-<input type="text" id="q" placeholder="Search e.g. paint, M8, 440C, PETG, 40c..." oninput="filterCards()">
+<h2>🔍 Search all {N_LIST_EN + N_KUCH_EN + N_WARS_EN + N_ROW_EN} tools, tables and lists</h2>
+<label for="q">Type what you're looking for (e.g. paint, concrete, m8, fries, chicken, camping, 40c):</label>
+<input type="text" id="q" placeholder="Search e.g. paint, M8, fries, camping, 40c..." oninput="filterCards()">
 <div class="grid" id="cards">
-{''.join(workshop_cards_en + cycling_cards_en)}
+{''.join(lists_cards_en + kitchen_cards_en + workshop_cards_en + cycling_cards_en)}
 </div>
 <div id="noRes" class="no-results">No matching tool found. Check the spelling or go straight to a section above.</div>
-<p style="font-size:0.85rem; margin-top:1.5rem;">Kitchen (air fryer times) and printable packing lists are currently available in the <a href="/" hreflang="pl" lang="pl" style="color:var(--accent);">Polish version</a>.</p>
 <script>
 function filterCards() {{
     const q = normStr(document.getElementById('q').value);
@@ -2364,7 +2816,7 @@ function filterCards() {{
 all_urls.append(f"{DOMAIN}/en/")
 all_urls.append(f"{DOMAIN}/en/workshop/")
 all_urls.append(f"{DOMAIN}/en/cycling/")
-save_file("en/index.html", wrap_html("Quick Workshop Calculators, Tap Drill Sizes and Tyre Pressure Tables", "No-fluff toolbelt: paint and concrete calculators, tap drill sizes, steel heat treatment, 3D printing temperatures and a bike tyre pressure calculator.", HOME_BODY_EN, "en/", lang="en"))
+save_file("en/index.html", wrap_html("Quick Calculators, Packing Lists, Air Fryer Times and Workshop Tables", "No-fluff toolbelt: packing checklists for camp and travel, air fryer times, paint and concrete calculators, tap drill sizes and a bike tyre pressure calculator.", HOME_BODY_EN, "en/", lang="en"))
 
 # 12. Strona 404, sitemap.xml (z prawdziwymi datami zmian) oraz robots.txt
 NOT_FOUND_BODY = """
