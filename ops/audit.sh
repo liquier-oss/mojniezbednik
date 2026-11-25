@@ -38,6 +38,8 @@ section() { printf '\n===== %s =====\n' "$1"; }
   section "Otwarte porty";     ss -tulpn | grep LISTEN
   section "Certyfikat na serwerze (origin)"
   echo | openssl s_client -connect 127.0.0.1:443 -servername "$DOMAIN" 2>/dev/null | openssl x509 -noout -subject -issuer -enddate 2>/dev/null || echo "brak/nie udało się odczytać"
+  section "Certyfikaty Let's Encrypt (certbot)"
+  if command -v certbot >/dev/null; then certbot certificates 2>/dev/null | grep -E "Certificate Name|Domains|Expiry"; echo "Timer odnawiania: $(systemctl is-active certbot.timer 2>/dev/null)"; else echo "brak certbot"; fi
   section "nginx - ostatnie błędy"; tail -n 40 /var/log/nginx/error.log 2>/dev/null
   section "nginx - najczęstsze odpowiedzi 4xx/5xx"
   awk '$9 ~ /^[45][0-9][0-9]$/ {print $9, $7}' /var/log/nginx/access.log 2>/dev/null | sort | uniq -c | sort -rn | head -n 20
@@ -49,7 +51,7 @@ section() { printf '\n===== %s =====\n' "$1"; }
   find "$WEB_ROOT" -type f \( -name '*.php' -o -name '*.sh' -o -name '*.py' -o -name '*.cgi' \) 2>/dev/null | head -n 20
 } > "$DATA" 2>&1
 
-PROMPT="Jesteś administratorem bezpieczeństwa. Poniżej dane z serwera VPS (Ubuntu, nginx, statyczna strona HTML ${DOMAIN} za Cloudflare). Napisz krótki raport po polsku (max 15 linii): na początku jedna linia STATUS: OK / UWAGA / ALARM, potem konkretne problemy od najważniejszego i dokładne polecenia naprawy. Nie wymyślaj problemów, których nie ma w danych. Strona jest generowana skryptem update_hub.py (z GitHuba) do /var/www/hub - zmienione tam pliki .html są normalne po wdrożeniu; podejrzane są pliki .php/.sh/.py lub nieznane katalogi. Na serwerze działa też cron root z /root/raport_ruchu.py - to znany, własny skrypt. Logowanie hasłem SSH dla użytkownika ubuntu jest świadomym wyborem właściciela (chronione fail2ban) - nie zgłaszaj go jako problemu, zgłaszaj tylko podejrzane udane logowania z nieznanych IP. Użytkownik deploy logujący się kluczem z adresów Azure/Microsoft to GitHub Actions (wdrożenia) - klucz ma wymuszoną komendę, to normalne."
+PROMPT="Jesteś administratorem bezpieczeństwa. Poniżej dane z serwera VPS (Ubuntu, nginx; dwie strony: ${DOMAIN} za Cloudflare oraz park-swiatowida.pl bezpośrednio z certyfikatem Let's Encrypt; porty 80/443 celowo otwarte dla wszystkich). Napisz krótki raport po polsku (max 15 linii): na początku jedna linia STATUS: OK / UWAGA / ALARM, potem konkretne problemy od najważniejszego i dokładne polecenia naprawy. Nie wymyślaj problemów, których nie ma w danych. Strona jest generowana skryptem update_hub.py (z GitHuba) do /var/www/hub - zmienione tam pliki .html są normalne po wdrożeniu; podejrzane są pliki .php/.sh/.py lub nieznane katalogi. Na serwerze działa też cron root z /root/raport_ruchu.py - to znany, własny skrypt. Logowanie hasłem SSH dla użytkownika ubuntu jest świadomym wyborem właściciela (chronione fail2ban) - nie zgłaszaj go jako problemu, zgłaszaj tylko podejrzane udane logowania z nieznanych IP. Użytkownik deploy logujący się kluczem z adresów Azure/Microsoft to GitHub Actions (wdrożenia) - klucz ma wymuszoną komendę, to normalne. Ostrzegaj, jeśli certyfikat Let's Encrypt wygasa za mniej niż 20 dni albo timer certbot nie jest aktywny. Plik statystyki-tajne-987.html jest chroniony hasłem (auth_basic) - to celowe."
 
 cd "$(mktemp -d)"
 REPORT=$(claude -p "$PROMPT" --model sonnet \

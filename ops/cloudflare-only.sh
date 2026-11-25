@@ -2,6 +2,8 @@
 # Wpuszcza ruch na porty 80/443 tylko z adresów Cloudflare i ustawia w nginx
 # prawdziwe IP odwiedzających (zamiast IP Cloudflare) w logach.
 # Uruchamiaj jako root. Bezpieczne do ponownego uruchamiania (cron co tydzień).
+# UWAGA: NIE UŻYWAĆ, dopóki na serwerze są strony poza Cloudflare (np. park-swiatowida.pl) -
+# zamknięcie www tylko dla Cloudflare odcina je od odwiedzających i blokuje odnawianie certyfikatów.
 set -euo pipefail
 
 V4=$(curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4)
