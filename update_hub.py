@@ -1275,10 +1275,16 @@ function calcMortar() {
             : `<h3>Proporcja objętościowa 1 : 3 (Mocna zaprawa czysto cementowa)</h3><ul><li><strong>Cement:</strong> ${cemBags} worek 25 kg <em>(${cemBuckets} wiadra 10L)</em></li><li><strong>Piasek:</strong> ${sandBuckets} wiader budowlanych (po 10L)</li><li><strong>Woda:</strong> ok. ${waterL} litrów</li></ul>`;
     }
 }
-calcPaint();
-calcMortar();
+if (document.getElementById('pArea')) calcPaint();
+if (document.getElementById('mType')) calcMortar();
 </script>
 """
+
+def _split_calc(widget):
+    i_m = widget.index('<div class="timer-box" style="text-align:left;" id="mortarCalcBox">')
+    i_s = widget.index("<script>")
+    return widget[:i_m], widget[i_m:i_s], widget[i_s:]
+PAINT_HTML, MORTAR_HTML, CALC_JS = _split_calc(PAINT_AND_MORTAR_WIDGET)
 
 # Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
 N_KUCH = len(KUCHNIA_ITEMS) + 2           # + przelicznik piekarnik -> Airfryer i miar kuchennych
@@ -1724,7 +1730,7 @@ warsztat_cards.append(f'<a href="/{paint_rel}" class="card" data-sub="przeliczni
 paint_page_body = f"""
 <div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » Kalkulator Farby</div>
 <h1>Kalkulator Farby na m² – Ile litrów farby potrzebujesz na pokój?</h1>
-{PAINT_AND_MORTAR_WIDGET}
+{PAINT_HTML}{CALC_JS}
 <p style="margin-top:1.5rem;"><a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
 """
 save_file(paint_rel, wrap_html("Kalkulator Farby na m² – Ile litrów na pokój i ściany?", "Szybki kalkulator zużycia farby na m² z odliczeniem drzwi i okien oraz 10% zapasem.", paint_page_body, paint_rel))
@@ -1735,7 +1741,7 @@ warsztat_cards.append(f'<a href="/{mortar_rel}" class="card" data-sub="przeliczn
 mortar_page_body = f"""
 <div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » Proporcje Zaprawy i Betonu</div>
 <h1>Proporcje Zaprawy Murarskiej i Betonu – Przelicznik na wiadra 10L</h1>
-{PAINT_AND_MORTAR_WIDGET}
+{MORTAR_HTML}{CALC_JS}
 <p style="margin-top:1.5rem;"><a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
 """
 save_file(mortar_rel, wrap_html("Proporcje Zaprawy i Betonu na Wiadra 10L i Worki 25kg", "Praktyczny kalkulator i tabela proporcji betonu (1:2:3) oraz zaprawy murarskiej (1:1:6, 1:3) przeliczona na wiadra budowlane.", mortar_page_body, mortar_rel))
@@ -2354,7 +2360,13 @@ save_file("kuchnia/index.html", wrap_html("Tabela Czasów i Temperatur Airfryer"
 
 WARSZTAT_INDEX = f"""
 <h1>🔧 Niezbędnik Warsztatowy i Remontowy – Gwinty, Stal, Druk 3D, Kalkulatory</h1>
-{PAINT_AND_MORTAR_WIDGET}
+<h2>🧮 Kalkulatory remontowe</h2>
+<div class="grid" style="margin-top:0.5rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:0.6rem;">
+    <a href="/warsztat/kalkulator-farby.html" class="card"><h3>🎨 Farba</h3><p class="card-val">Ile litrów na pokój</p></a>
+    <a href="/warsztat/proporcje-zaprawy-i-betonu.html" class="card"><h3>🧱 Beton i zaprawa</h3><p class="card-val">Wiadra 10 L i worki 25 kg</p></a>
+    <a href="/warsztat/kalkulator-plytek-fugi-kleju.html" class="card"><h3>🔲 Płytki, fuga, klej</h3><p class="card-val">Paczki z zapasem</p></a>
+    <a href="/warsztat/kalkulator-paneli-podlogowych.html" class="card"><h3>🪵 Panele podłogowe</h3><p class="card-val">Paczki, podkład, listwy</p></a>
+</div>
 <h2>Wszystkie tabele warsztatowe i budowlane</h2>
 <p>Wybierz podkategorię poniżej lub wpisz szukany parametr (np. M8, farba, beton, 1.2842, PETG, 1:50):</p>
 <div class="filter-bar" role="group" aria-label="Filtr podkategorii warsztatowych">
@@ -2671,7 +2683,8 @@ EN_WIDGET = """
     </div>
     <div id="mortarResBox" class="info-box" style="border-color:var(--accent); margin-top:0.5rem;"></div>
 </div>
-""" + PAINT_AND_MORTAR_WIDGET[PAINT_AND_MORTAR_WIDGET.index("<script>"):]
+"""
+EN_PAINT_HTML, EN_MORTAR_HTML, _ = _split_calc(EN_WIDGET + CALC_JS)
 
 workshop_cards_en = []
 cycling_cards_en = []
@@ -2686,7 +2699,7 @@ for _pl_rel, (en_rel, c_title, c_desc, c_h1, c_crumb) in CALC_EN.items():
     calc_body = f"""
 <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » {c_crumb}</div>
 <h1>{c_h1}</h1>
-{EN_WIDGET}
+{(EN_PAINT_HTML if "paint" in en_rel else EN_MORTAR_HTML)}{CALC_JS}
 <p style="margin-top:1.5rem;"><a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
 """
     save_file(en_rel, wrap_html(c_title, c_desc, calc_body, en_rel, lang="en"))
@@ -2863,7 +2876,13 @@ for _sub, _label in SUB_LABELS_W_EN.items():
 
 WORKSHOP_INDEX_EN = f"""
 <h1>🔧 Workshop &amp; DIY Reference – Threads, Steel, 3D Printing, Calculators</h1>
-{EN_WIDGET}
+<h2>🧮 Renovation calculators</h2>
+<div class="grid" style="margin-top:0.5rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:0.6rem;">
+    <a href="/en/workshop/paint-calculator.html" class="card"><h3>🎨 Paint</h3><p class="card-val">Litres for a room</p></a>
+    <a href="/en/workshop/concrete-mortar-mix-ratios.html" class="card"><h3>🧱 Concrete &amp; mortar</h3><p class="card-val">10 L buckets and 25 kg bags</p></a>
+    <a href="/en/workshop/tile-grout-adhesive-calculator.html" class="card"><h3>🔲 Tiles, grout, adhesive</h3><p class="card-val">Boxes with allowance</p></a>
+    <a href="/en/workshop/laminate-flooring-calculator.html" class="card"><h3>🪵 Flooring</h3><p class="card-val">Packs, underlay, skirting</p></a>
+</div>
 <h2>All workshop and building tables</h2>
 <p>Pick a sub-category below or type what you're looking for (e.g. M8, paint, concrete, D2, PETG, 50:1):</p>
 <div class="filter-bar" role="group" aria-label="Workshop sub-category filter">
