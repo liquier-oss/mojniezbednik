@@ -69,6 +69,37 @@ STYLE_CSS = """
     --danger: #ef4444;
     --warning-bg: rgba(245, 158, 11, 0.12);
     --danger-bg: rgba(239, 68, 68, 0.12);
+    --on-accent: #000;
+    --soft: rgba(255,255,255,0.04);
+    --soft-2: rgba(255,255,255,0.08);
+    --soft-line: rgba(255,255,255,0.06);
+    --secondary: #334155;
+    --secondary-hover: #475569;
+    --shadow: 0 4px 12px rgba(0,0,0,0.35);
+    color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #b45309;
+        --accent-hover: #92400e;
+        --border: #e2e8f0;
+        --success: #047857;
+        --danger: #b91c1c;
+        --warning-bg: rgba(245, 158, 11, 0.13);
+        --danger-bg: rgba(239, 68, 68, 0.09);
+        --on-accent: #fff;
+        --soft: rgba(15,23,42,0.04);
+        --soft-2: rgba(15,23,42,0.08);
+        --soft-line: rgba(15,23,42,0.08);
+        --secondary: #e2e8f0;
+        --secondary-hover: #cbd5e1;
+        --shadow: 0 4px 14px rgba(15,23,42,0.10);
+        color-scheme: light;
+    }
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -114,10 +145,13 @@ nav a {
     font-weight: 600;
     padding: 0.35rem 0.65rem;
     border-radius: 0.4rem;
-    background: rgba(255,255,255,0.04);
+    background: var(--soft);
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
-nav a:hover { color: var(--accent); background: rgba(255,255,255,0.08); }
+nav a:hover { color: var(--accent); background: var(--soft-2); }
 .lang-btn {
     background: transparent;
     color: var(--accent);
@@ -129,7 +163,7 @@ nav a:hover { color: var(--accent); background: rgba(255,255,255,0.08); }
     cursor: pointer;
     margin: 0;
 }
-.lang-btn:hover { background: var(--accent); color: #000; }
+.lang-btn:hover { background: var(--accent); color: var(--on-accent); }
 a.lang-btn { text-decoration: none; display: inline-block; }
 .en-hint {
     max-width: 960px;
@@ -175,6 +209,7 @@ p { margin-bottom: 1rem; color: var(--muted); }
 .card:hover {
     transform: translateY(-2px);
     border-color: var(--accent);
+    box-shadow: var(--shadow);
 }
 .card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text); line-height: 1.35; }
 .card .card-val {
@@ -183,7 +218,7 @@ p { margin-bottom: 1rem; color: var(--muted); }
     color: var(--accent);
     margin-bottom: 0;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid var(--soft-line);
 }
 .badge {
     display: inline-block;
@@ -246,7 +281,7 @@ p { margin-bottom: 1rem; color: var(--muted); }
 }
 button, .btn {
     background: var(--accent);
-    color: #000;
+    color: var(--on-accent);
     border: none;
     padding: 0.65rem 1.1rem;
     font-size: 0.92rem;
@@ -258,8 +293,8 @@ button, .btn {
     text-decoration: none;
 }
 button:hover, .btn:hover { background: var(--accent-hover); }
-.btn-secondary { background: #334155; color: var(--text); }
-.btn-secondary:hover { background: #475569; }
+.btn-secondary { background: var(--secondary); color: var(--text); }
+.btn-secondary:hover { background: var(--secondary-hover); }
 .filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -278,7 +313,7 @@ button:hover, .btn:hover { background: var(--accent-hover); }
 }
 .filter-btn.active, .filter-btn:hover {
     background: var(--accent);
-    color: #000;
+    color: var(--on-accent);
     border-color: var(--accent);
 }
 label {
@@ -327,6 +362,37 @@ input, select {
     margin-top: 1rem;
 }
 
+/* --- IKONY, NAGŁÓWEK I TELEFON --- */
+.ico { width: 1.05em; height: 1.05em; flex-shrink: 0; vertical-align: -0.15em; }
+.logo { display: inline-flex; align-items: center; gap: 0.4rem; }
+.logo .ico { width: 1.25em; height: 1.25em; }
+.nav-container .lang-btn { order: 3; }
+.cat-card h3 { display: flex; align-items: center; gap: 0.55rem; font-size: 1.2rem; }
+.cat-card h3 .ico { width: 1.5rem; height: 1.5rem; color: var(--accent); }
+.cat-card p { margin-bottom: 0; }
+@media (max-width: 640px) {
+    header { position: static; padding: 0.65rem 0.85rem 0.5rem; }
+    .nav-container { gap: 0.5rem; }
+    .nav-container .lang-btn { order: 1; margin-left: auto; }
+    nav {
+        order: 2;
+        flex-basis: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.15rem;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    main { margin-top: 1rem; }
+    h1 { font-size: 1.45rem; }
+    h2 { font-size: 1.2rem; }
+    .param-box { padding: 1.1rem; }
+    .param-item .val { font-size: 1.6rem; }
+    .checklist-action-bar { top: 0.5rem; }
+    .en-hint { margin: 0.75rem 0.75rem 0; }
+}
+
 /* --- STYLE DLA INTERAKTYWNYCH CHECKLIST --- */
 .checklist-action-bar {
     display: flex;
@@ -342,7 +408,7 @@ input, select {
     position: sticky;
     top: 68px;
     z-index: 90;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    box-shadow: var(--shadow);
 }
 .progress-wrap {
     width: 100%;
@@ -439,6 +505,18 @@ footer {
 """
 save_file("style.css", STYLE_CSS)
 
+# Ikony SVG (proste, własne); dziedziczą kolor tekstu (currentColor)
+def _svg(inner, sw=2):
+    return (f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{sw}" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{inner}</svg>')
+ICON = {
+    "bolt": '<svg class="ico" viewBox="0 0 64 64" aria-hidden="true"><path d="M38 6 16 36h14l-4 22 22-30H34z" fill="currentColor"/></svg>',
+    "kitchen": _svg('<path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M2 10h2M20 10h2"/><path d="M9 6c0-1 1-1 1-2M14 6c0-1 1-1 1-2"/>'),
+    "workshop": _svg('<path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3z"/><path d="M14.7 6.3 17 4l3 3-2.3 2.3"/>'),
+    "bike": _svg('<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9 9h6l3.5 7.5M9 9l3 7.5h-6.5M15 9l-1.5-3H11"/>'),
+    "lists": _svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 12 2 2 4-4M9 17h6"/>'),
+}
+
 # 3. Wspólny szablon HTML. Wersja PL i EN (My Toolbelt) to osobne strony:
 #    polska pod "/", angielska pod "/en/", powiązane przez hreflang.
 ALT_PL2EN = {}   # wypełniane przed generowaniem stron (sekcja 4b)
@@ -473,14 +551,14 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
         site_name = "My Toolbelt (MójNiezbędnik.pl)"
         header_html = f"""<header>
     <div class="nav-container">
-        <a href="/en/" class="logo" id="siteLogo">⚡ My Toolbelt</a>
+        <a href="/en/" class="logo" id="siteLogo">{ICON['bolt']}My Toolbelt</a>
         <nav aria-label="Main navigation">
-            <a href="/en/kitchen/">🍳 Kitchen ({N_KUCH_EN})</a>
-            <a href="/en/workshop/">🔧 Workshop ({N_WARS_EN})</a>
-            <a href="/en/cycling/">🚲 Cycling ({N_ROW_EN})</a>
-            <a href="/en/checklists/">🎒 Checklists ({N_LIST_EN})</a>
-            <a class="lang-btn" href="{switch_href}" hreflang="pl" lang="pl" title="Wersja polska">🇵🇱 PL</a>
+            <a href="/en/kitchen/">{ICON['kitchen']}Kitchen ({N_KUCH_EN})</a>
+            <a href="/en/workshop/">{ICON['workshop']}Workshop ({N_WARS_EN})</a>
+            <a href="/en/cycling/">{ICON['bike']}Cycling ({N_ROW_EN})</a>
+            <a href="/en/checklists/">{ICON['lists']}Checklists ({N_LIST_EN})</a>
         </nav>
+        <a class="lang-btn" href="{switch_href}" hreflang="pl" lang="pl" title="Wersja polska">🇵🇱 PL</a>
     </div>
 </header>"""
         footer_html = f"""<footer>
@@ -508,14 +586,14 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
         site_name = "MójNiezbędnik.pl"
         header_html = f"""<header>
     <div class="nav-container">
-        <a href="/" class="logo" id="siteLogo">⚡ MójNiezbędnik.pl</a>
+        <a href="/" class="logo" id="siteLogo">{ICON['bolt']}MójNiezbędnik.pl</a>
         <nav aria-label="Główna nawigacja">
-            <a href="/kuchnia/">🍳 Kuchnia ({N_KUCH})</a>
-            <a href="/warsztat/">🔧 Warsztat ({N_WARS})</a>
-            <a href="/rower/">🚲 Rower ({N_ROW})</a>
-            <a href="/listy/">🎒 Listy ({N_LIST})</a>
-            <a class="lang-btn" href="{switch_href}" hreflang="en" lang="en" title="English version">🇬🇧 EN</a>
+            <a href="/kuchnia/">{ICON['kitchen']}Kuchnia ({N_KUCH})</a>
+            <a href="/warsztat/">{ICON['workshop']}Warsztat ({N_WARS})</a>
+            <a href="/rower/">{ICON['bike']}Rower ({N_ROW})</a>
+            <a href="/listy/">{ICON['lists']}Listy ({N_LIST})</a>
         </nav>
+        <a class="lang-btn" href="{switch_href}" hreflang="en" lang="en" title="English version">🇬🇧 EN</a>
     </div>
 </header>"""
         footer_html = f"""<footer>
@@ -557,7 +635,8 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{site_name}">
     <meta property="og:locale" content="{og_locale}">
@@ -1255,7 +1334,7 @@ for slug, title, temp, mins, tip in KUCHNIA_ITEMS:
             wakeLock = null;
         }}
         wlEl.textContent = "ℹ️ Blokada wygaszania ekranu: wyłączona";
-        wlEl.style.color = "#cbd5e1";
+        wlEl.style.color = "";
     }}
 
     document.addEventListener('visibilitychange', () => {{
@@ -1929,24 +2008,24 @@ HOME_BODY = f"""
 <h1>⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy</h1>
 <p>Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:</p>
 <div class="grid" style="margin-bottom:2rem;">
-    <a href="/listy/" class="card" style="border-color:var(--accent);">
+    <a href="/listy/" class="card cat-card" style="border-color:var(--accent);">
         <span class="badge">{LIST_BADGE}</span>
-        <h3>🎒 Listy i Niezbędniki</h3>
+        <h3>{ICON['lists']}Listy i Niezbędniki</h3>
         <p class="card-val">Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)</p>
     </a>
-    <a href="/kuchnia/" class="card" style="border-color:var(--accent);">
+    <a href="/kuchnia/" class="card cat-card" style="border-color:var(--accent);">
         <span class="badge">{KUCH_POZ}</span>
-        <h3>🍳 Kuchnia & Airfryer</h3>
+        <h3>{ICON['kitchen']}Kuchnia & Airfryer</h3>
         <p class="card-val">Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock</p>
     </a>
-    <a href="/warsztat/" class="card" style="border-color:var(--accent);">
+    <a href="/warsztat/" class="card cat-card" style="border-color:var(--accent);">
         <span class="badge">{WARS_POZ} + Kalkulatory</span>
-        <h3>🔧 Warsztat, Remont & DIY</h3>
+        <h3>{ICON['workshop']}Warsztat, Remont & DIY</h3>
         <p class="card-val">Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D</p>
     </a>
-    <a href="/rower/" class="card" style="border-color:var(--accent);">
+    <a href="/rower/" class="card cat-card" style="border-color:var(--accent);">
         <span class="badge">{ROW_POZ} + Kalkulator</span>
-        <h3>🚲 Rower & Serwis</h3>
+        <h3>{ICON['bike']}Rower & Serwis</h3>
         <p class="card-val">Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm</p>
     </a>
 </div>
@@ -2412,7 +2491,7 @@ for slug, _title_pl, temp, mins, _tip_pl in KUCHNIA_ITEMS:
             wakeLock = null;
         }}
         wlEl.textContent = "ℹ️ Screen wake lock: off";
-        wlEl.style.color = "#cbd5e1";
+        wlEl.style.color = "";
     }}
 
     document.addEventListener('visibilitychange', () => {{
@@ -2771,24 +2850,24 @@ HOME_BODY_EN = f"""
 <h1>⚡ My Toolbelt – No-Fluff Calculators, Tables and Checklists</h1>
 <p>Quick reference tables and starting parameters with their conditions of use – without endless introductions. Choose a section or search below:</p>
 <div class="grid" style="margin-bottom:2rem;">
-    <a href="/en/checklists/" class="card" style="border-color:var(--accent);">
+    <a href="/en/checklists/" class="card cat-card" style="border-color:var(--accent);">
         <span class="badge">{N_LIST_EN} interactive checklists</span>
-        <h3>🎒 Packing Lists &amp; Checklists</h3>
+        <h3>{ICON['lists']}Packing Lists &amp; Checklists</h3>
         <p>Summer camp, ski trip, camping, carry-on, bikepacking, hospital bag (print A4 / PDF)</p>
     </a>
-    <a href="/en/kitchen/" class="card">
+    <a href="/en/kitchen/" class="card cat-card">
         <span class="badge">{N_KUCH_EN} items</span>
-        <h3>🍳 Kitchen &amp; Air Fryer</h3>
+        <h3>{ICON['kitchen']}Kitchen &amp; Air Fryer</h3>
         <p>Approximate times, food-safety temperatures (74°C / 165°F for poultry) + a timer that keeps the screen on</p>
     </a>
-    <a href="/en/workshop/" class="card">
+    <a href="/en/workshop/" class="card cat-card">
         <span class="badge">{N_WARS_EN} items + calculators</span>
-        <h3>🔧 Workshop, Renovation &amp; DIY</h3>
+        <h3>{ICON['workshop']}Workshop, Renovation &amp; DIY</h3>
         <p>Paint and concrete calculators, tap drill sizes M2–M20, steel heat treatment, 3D printing temperatures</p>
     </a>
-    <a href="/en/cycling/" class="card">
+    <a href="/en/cycling/" class="card cat-card">
         <span class="badge">{N_ROW_EN} items + calculator</span>
-        <h3>🚲 Cycling &amp; Bike Service</h3>
+        <h3>{ICON['bike']}Cycling &amp; Bike Service</h3>
         <p>Tyre pressure calculator (hooked / hookless), tubeless sealant amounts, torque specs</p>
     </a>
 </div>
@@ -2819,15 +2898,15 @@ all_urls.append(f"{DOMAIN}/en/cycling/")
 save_file("en/index.html", wrap_html("Quick Calculators, Packing Lists, Air Fryer Times and Workshop Tables", "No-fluff toolbelt: packing checklists for camp and travel, air fryer times, paint and concrete calculators, tap drill sizes and a bike tyre pressure calculator.", HOME_BODY_EN, "en/", lang="en"))
 
 # 12. Strona 404, sitemap.xml (z prawdziwymi datami zmian) oraz robots.txt
-NOT_FOUND_BODY = """
+NOT_FOUND_BODY = f"""
 <h1>404 – Nie ma takiej strony</h1>
 <p>Ten adres nie istnieje albo został zmieniony. Wybierz dział lub skorzystaj z wyszukiwarki na stronie głównej.</p>
 <div class="grid" style="margin-top:1.5rem;">
     <a href="/" class="card"><h3>⚡ Strona główna i wyszukiwarka</h3></a>
-    <a href="/listy/" class="card"><h3>🎒 Listy i Niezbędniki</h3></a>
-    <a href="/kuchnia/" class="card"><h3>🍳 Kuchnia & Airfryer</h3></a>
-    <a href="/warsztat/" class="card"><h3>🔧 Warsztat, Remont & DIY</h3></a>
-    <a href="/rower/" class="card"><h3>🚲 Rower & Serwis</h3></a>
+    <a href="/listy/" class="card cat-card"><h3>{ICON['lists']}Listy i Niezbędniki</h3></a>
+    <a href="/kuchnia/" class="card cat-card"><h3>{ICON['kitchen']}Kuchnia & Airfryer</h3></a>
+    <a href="/warsztat/" class="card cat-card"><h3>{ICON['workshop']}Warsztat, Remont & DIY</h3></a>
+    <a href="/rower/" class="card cat-card"><h3>{ICON['bike']}Rower & Serwis</h3></a>
 </div>
 """
 save_file("404.html", wrap_html("Nie znaleziono strony (404)", "Ta strona nie istnieje. Przejdź do działów MójNiezbędnik.pl.", NOT_FOUND_BODY, noindex=True))
