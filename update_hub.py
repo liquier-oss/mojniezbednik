@@ -41,7 +41,7 @@ def pl_plural(n, one, few, many):
     return many
 
 # 1. Tworzenie katalogów
-for sub in ["", "kuchnia", "warsztat", "rower", "listy"]:
+for sub in ["", "kuchnia", "warsztat", "rower", "listy", "en", "en/workshop", "en/cycling"]:
     os.makedirs(os.path.join(BASE_DIR, sub), exist_ok=True)
 
 def save_file(rel_path, content):
@@ -130,6 +130,22 @@ nav a:hover { color: var(--accent); background: rgba(255,255,255,0.08); }
     margin: 0;
 }
 .lang-btn:hover { background: var(--accent); color: #000; }
+a.lang-btn { text-decoration: none; display: inline-block; }
+.en-hint {
+    max-width: 960px;
+    margin: 1rem auto 0;
+    padding: 0.6rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: var(--warning-bg);
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+}
+.en-hint[hidden] { display: none; }
+.en-hint a { color: var(--accent); font-weight: 700; text-decoration: none; }
+.en-hint-x { background: transparent; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 0 0.25rem; }
 main {
     max-width: 960px;
     margin: 1.5rem auto;
@@ -423,34 +439,126 @@ footer {
 """
 save_file("style.css", STYLE_CSS)
 
-# 3. Wspólny szablon HTML ze słownikiem PL/EN (My Toolbelt)
-def wrap_html(title, desc, body, canonical_path="", noindex=False):
+# 3. Wspólny szablon HTML. Wersja PL i EN (My Toolbelt) to osobne strony:
+#    polska pod "/", angielska pod "/en/", powiązane przez hreflang.
+ALT_PL2EN = {}   # wypełniane przed generowaniem stron (sekcja 4b)
+ALT_EN2PL = {}
+
+def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
     canonical_url = f"{DOMAIN}/{canonical_path}"   # katalogi z "/" na końcu, tak jak w sitemap.xml
     t_attr = html.escape(title, quote=True)
     d_attr = html.escape(desc, quote=True)
+    alt_path = (ALT_EN2PL if lang == "en" else ALT_PL2EN).get(canonical_path)
     if noindex:
         head_index = '<meta name="robots" content="noindex">'
-        og_url = f"{DOMAIN}/"
+        og_url = f"{DOMAIN}/en/" if lang == "en" else f"{DOMAIN}/"
     else:
         head_index = f'<link rel="canonical" href="{canonical_url}">'
         og_url = canonical_url
+    hreflang = ""
+    if alt_path is not None and not noindex:
+        pl_url = canonical_url if lang == "pl" else f"{DOMAIN}/{alt_path}"
+        en_url = canonical_url if lang == "en" else f"{DOMAIN}/{alt_path}"
+        hreflang = (f'\n    <link rel="alternate" hreflang="pl" href="{pl_url}">'
+                    f'\n    <link rel="alternate" hreflang="en" href="{en_url}">'
+                    f'\n    <link rel="alternate" hreflang="x-default" href="{pl_url}">')
+    if alt_path is not None:
+        switch_href = "/" + alt_path
+    else:
+        switch_href = "/en/" if lang == "pl" else "/"
+
+    if lang == "en":
+        title_suffix = "My Toolbelt (MójNiezbędnik.pl)"
+        og_locale = "en_GB"
+        site_name = "My Toolbelt (MójNiezbędnik.pl)"
+        header_html = f"""<header>
+    <div class="nav-container">
+        <a href="/en/" class="logo" id="siteLogo">⚡ My Toolbelt</a>
+        <nav aria-label="Main navigation">
+            <a href="/en/workshop/">🔧 Workshop ({N_WARS_EN})</a>
+            <a href="/en/cycling/">🚲 Cycling ({N_ROW_EN})</a>
+            <a class="lang-btn" href="{switch_href}" hreflang="pl" lang="pl" title="Wersja polska">🇵🇱 PL</a>
+        </nav>
+    </div>
+</header>"""
+        footer_html = f"""<footer>
+    <div class="footer-grid">
+        <div>
+            <h4>About My Toolbelt</h4>
+            <p>A no-fluff collection of practical workshop tables, calculators and cycling reference values. Last updated: <strong>{SITE_UPDATED}</strong>.</p>
+        </div>
+        <div>
+            <h4>Methodology &amp; safety</h4>
+            <p>All values are starting reference points. Always check the manufacturer's documentation and your local codes and standards before doing the work.</p>
+        </div>
+        <div>
+            <h4>Contact &amp; feedback</h4>
+            <p>Found a mistake or want to suggest a new tool? Email: <a href="mailto:kontakt@mojniezbednik.pl" style="color:var(--accent);">kontakt@mojniezbednik.pl</a></p>
+        </div>
+    </div>
+    <p style="text-align:center; border-top:1px solid var(--border); padding-top:1rem;">© {SITE_UPDATED[:4]} My Toolbelt (MójNiezbędnik.pl) – No tracking cookies. Your settings stay on your device. <a href="/" hreflang="pl" lang="pl" style="color:var(--accent);">Wersja polska</a></p>
+</footer>"""
+        en_hint = ""
+        en_hint_script = ""
+    else:
+        title_suffix = "Mój Niezbędnik / My Toolbelt"
+        og_locale = "pl_PL"
+        site_name = "MójNiezbędnik.pl"
+        header_html = f"""<header>
+    <div class="nav-container">
+        <a href="/" class="logo" id="siteLogo">⚡ MójNiezbędnik.pl</a>
+        <nav aria-label="Główna nawigacja">
+            <a href="/kuchnia/">🍳 Kuchnia ({N_KUCH})</a>
+            <a href="/warsztat/">🔧 Warsztat ({N_WARS})</a>
+            <a href="/rower/">🚲 Rower ({N_ROW})</a>
+            <a href="/listy/">🎒 Listy ({N_LIST})</a>
+            <a class="lang-btn" href="{switch_href}" hreflang="en" lang="en" title="English version">🇬🇧 EN</a>
+        </nav>
+    </div>
+</header>"""
+        footer_html = f"""<footer>
+    <div class="footer-grid">
+        <div>
+            <h4>O projekcie MójNiezbędnik.pl</h4>
+            <p>Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: <strong>{SITE_UPDATED}</strong>.</p>
+        </div>
+        <div>
+            <h4>Metodologia i bezpieczeństwo</h4>
+            <p>Podane wartości mają charakter orientacyjny (punkty wyjścia). Przed wykonaniem prac elektrycznych, obróbki cieplnej czy montażu komponentów rowerowych zawsze sprawdź dokumentację producenta i normy branżowe.</p>
+        </div>
+        <div>
+            <h4>Kontakt i zgłaszanie uwag</h4>
+            <p><span>Znalazłeś błąd w tabeli lub chcesz zasugerować nową listę? Napisz:</span> <a href="mailto:kontakt@mojniezbednik.pl" style="color:var(--accent);">kontakt@mojniezbednik.pl</a></p>
+        </div>
+    </div>
+    <p style="text-align:center; border-top:1px solid var(--border); padding-top:1rem;">© {SITE_UPDATED[:4]} MójNiezbędnik.pl (My Toolbelt) – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.</p>
+</footer>"""
+        hint_txt = "This page is also available in English" if alt_path is not None else "MójNiezbędnik is also available in English (My Toolbelt)"
+        en_hint = f"""<div class="en-hint" id="enHint" hidden><a href="{switch_href}" hreflang="en" lang="en">🇬🇧 {hint_txt} →</a><button type="button" class="en-hint-x" aria-label="Close" onclick="document.getElementById('enHint').hidden=true;try{{localStorage.setItem('mn_hide_en','1')}}catch(e){{}}">✕</button></div>
+"""
+        en_hint_script = """try {
+    if (!localStorage.getItem('mn_hide_en') && /^en\\b/i.test(navigator.language || '')) {
+        document.getElementById('enHint').hidden = false;
+    }
+} catch (e) {}
+"""
 
     return f"""<!DOCTYPE html>
-<html lang="pl">
+<html lang="{lang}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} | Mój Niezbędnik / My Toolbelt</title>
+    <title>{title} | {title_suffix}</title>
     <meta name="description" content="{d_attr}">
-    {head_index}
+    {head_index}{hreflang}
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="theme-color" content="#0f172a">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="MójNiezbędnik.pl">
-    <meta property="og:locale" content="pl_PL">
+    <meta property="og:site_name" content="{site_name}">
+    <meta property="og:locale" content="{og_locale}">
     <meta property="og:title" content="{t_attr}">
     <meta property="og:description" content="{d_attr}">
     <meta property="og:url" content="{og_url}">
@@ -458,187 +566,24 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False):
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
+    <script>
+    const currentLang = "{lang}";
+    function normStr(s) {{
+        return (s || "").toLowerCase()
+            .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+            .replace(/ł/g, "l")
+            .replace(/[-_\\s]+/g, "");
+    }}
+    </script>
 </head>
 <body>
-<header>
-    <div class="nav-container">
-        <a href="/" class="logo" id="siteLogo">⚡ MójNiezbędnik.pl</a>
-        <nav aria-label="Główna nawigacja">
-            <a href="/kuchnia/" data-i18n="nav_kitchen">🍳 Kuchnia ({N_KUCH})</a>
-            <a href="/warsztat/" data-i18n="nav_workshop">🔧 Warsztat ({N_WARS})</a>
-            <a href="/rower/" data-i18n="nav_bike">🚲 Rower ({N_ROW})</a>
-            <a href="/listy/" data-i18n="nav_lists">🎒 Listy ({N_LIST})</a>
-            <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch language PL/EN">🇬🇧 EN</button>
-        </nav>
-    </div>
-</header>
-<main>
+{header_html}
+{en_hint}<main>
 {body}
 </main>
-<footer>
-    <div class="footer-grid">
-        <div>
-            <h4 data-i18n="foot_about_h">O projekcie MójNiezbędnik.pl</h4>
-            <p data-i18n="foot_about_p">Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: <strong>{SITE_UPDATED}</strong>.</p>
-        </div>
-        <div>
-            <h4 data-i18n="foot_safe_h">Metodologia i bezpieczeństwo</h4>
-            <p data-i18n="foot_safe_p">Podane wartości mają charakter orientacyjny (punkty wyjścia). Przed wykonaniem prac elektrycznych, obróbki cieplnej czy montażu komponentów rowerowych zawsze sprawdź dokumentację producenta i normy branżowe.</p>
-        </div>
-        <div>
-            <h4 data-i18n="foot_contact_h">Kontakt i zgłaszanie uwag</h4>
-            <p><span data-i18n="foot_contact_p">Znalazłeś błąd w tabeli lub chcesz zasugerować nową listę? Napisz:</span> <a href="mailto:kontakt@mojniezbednik.pl" style="color:var(--accent);">kontakt@mojniezbednik.pl</a></p>
-        </div>
-    </div>
-    <p style="text-align:center; border-top:1px solid var(--border); padding-top:1rem;" data-i18n="foot_copy">© {SITE_UPDATED[:4]} MójNiezbędnik.pl (My Toolbelt) – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.</p>
-</footer>
+{footer_html}
 <script>
-function normStr(s) {{
-    return (s || "").toLowerCase()
-        .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
-        .replace(/ł/g, "l")
-        .replace(/[-_\\s]+/g, "");
-}}
-
-const I18N_DICT = {{
-    pl: {{
-        logo: "⚡ MójNiezbędnik.pl",
-        nav_kitchen: "🍳 Kuchnia ({N_KUCH})",
-        nav_workshop: "🔧 Warsztat ({N_WARS})",
-        nav_bike: "🚲 Rower ({N_ROW})",
-        nav_lists: "🎒 Listy ({N_LIST})",
-        foot_about_h: "O projekcie MójNiezbędnik.pl",
-        foot_about_p: "Zbiór praktycznych tabel, punktów startowych, kalkulatorów oraz interaktywnych list pakowania (checklist). Ostatnia aktualizacja: {SITE_UPDATED}.",
-        foot_safe_h: "Metodologia i bezpieczeństwo",
-        foot_safe_p: "Podane wartości mają charakter orientacyjny (punkty wyjścia). Przed wykonaniem prac elektrycznych, obróbki cieplnej czy montażu komponentów rowerowych zawsze sprawdź dokumentację producenta i normy branżowe.",
-        foot_contact_h: "Kontakt i zgłaszanie uwag",
-        foot_contact_p: "Znalazłeś błąd w tabeli lub chcesz zasugerować nową listę? Napisz:",
-        foot_copy: "© {SITE_UPDATED[:4]} MójNiezbędnik.pl – Brak ciasteczek śledzących. Zaznaczenia list zapisywane są lokalnie na Twoim urządzeniu.",
-        home_h1: "⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy",
-        home_sub: "Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:",
-        cat_lists_b: "{LIST_BADGE}",
-        cat_lists_h: "🎒 Listy i Niezbędniki",
-        cat_lists_p: "Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)",
-        cat_kitch_b: "{KUCH_POZ}",
-        cat_kitch_h: "🍳 Kuchnia & Airfryer",
-        cat_kitch_p: "Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock",
-        cat_work_b: "{WARS_POZ} + Kalkulatory",
-        cat_work_h: "🔧 Warsztat, Remont & DIY",
-        cat_work_p: "Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D",
-        cat_bike_b: "{ROW_POZ} + Kalkulator",
-        cat_bike_h: "🚲 Rower & Serwis",
-        cat_bike_p: "Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm",
-        home_search_h: "🔍 Wyszukiwarka wszystkich {N_ALL} narzędzi, kalkulatorów i list",
-        home_search_lbl: "Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):",
-        paint_h2: "🎨 Kalkulator Farby (Ile litrów na pokój / ściany?)",
-        paint_desc: "Wpisz łączną powierzchnię do pomalowania, odejmij okna/drzwi i oblicz potrzebną ilość farby wraz z 10% zapasem.",
-        paint_area_lbl: "Powierzchnia ścian/sufitu (m²):",
-        paint_openings_lbl: "Liczba drzwi i okien (odlicza ~1.8 m²/szt.):",
-        paint_layers_lbl: "Liczba warstw malowania:",
-        paint_yield_lbl: "Wydajność farby z puszki (m²/L):",
-        paint_btn: "Oblicz ilość farby",
-        paint_res_net: "Powierzchnia netto (1 warstwa)",
-        paint_res_total: "Potrzebna farba (+10% zapasu)",
-        mortar_h2: "🧱 Kalkulator Zaprawy i Betonu (Przelicznik na wiadra 10L i worki)",
-        mortar_desc: "Praktyczne proporcje budowlane przeliczone na zwykłe wiadra budowlane (10 litrów) i worki cementu (25 kg).",
-        mortar_type_lbl: "Wybierz rodzaj mieszanki:",
-        mortar_opt_concrete: "Beton roboczy B15/B20 – pod słupki, posadzkę, podmurówkę (1 : 2 : 3)",
-        mortar_opt_masonry: "Zaprawa murarska / tynkarska cementowo-wapienna (1 : 1 : 6)",
-        mortar_opt_cement: "Zaprawa czysto cementowa – mocna, podkładowa, reperacje (1 : 3)",
-        mortar_batches_lbl: "Mnożnik zarobów (1 zarób = na 1 worek cementu 25 kg / ~20L):",
-        bike_calc_h2: "Kalkulator ciśnienia startowego w oponach (Gravel / MTB / Szosa)",
-        bike_weight_lbl: "Masa całkowita zestawu: kolarz + rower + ekwipunek (40 – 170 kg):",
-        bike_width_lbl: "Rzeczywista szerokość opony (mm):",
-        bike_setup_lbl: "System montażu i typ obręczy:",
-        bike_btn: "Oblicz ciśnienie startowe",
-        bike_front: "Przód (Startowe)",
-        bike_rear: "Tył (Startowe)"
-    }},
-    en: {{
-        logo: "⚡ My Toolbelt (mojniezbednik.pl)",
-        nav_kitchen: "🍳 Kitchen ({N_KUCH})",
-        nav_workshop: "🔧 Workshop ({N_WARS})",
-        nav_bike: "🚲 Cycling ({N_ROW})",
-        nav_lists: "🎒 Checklists ({N_LIST})",
-        foot_about_h: "About My Toolbelt (MójNiezbędnik.pl)",
-        foot_about_p: "No-fluff collection of practical workshop tables, calculators, airfryer timers, and printable A4 checklists. Last updated: {SITE_UPDATED}.",
-        foot_safe_h: "Methodology & Safety",
-        foot_safe_p: "Provided values are starting reference points. Always verify manufacturer documentation and local building/electrical codes before performing work.",
-        foot_contact_h: "Contact & Feedback",
-        foot_contact_p: "Found an error or want to suggest a new tool? Email us:",
-        foot_copy: "© {SITE_UPDATED[:4]} MójNiezbędnik.pl (My Toolbelt) – Zero tracking cookies. Checklist states are saved locally on your device.",
-        home_h1: "⚡ My Toolbelt – No-Fluff Workshop, Kitchen & Cycling Calculators",
-        home_sub: "Quick reference tables, starting parameters, and printable checklists without endless SEO stories. Choose a category or search below:",
-        cat_lists_b: "{N_LIST} interactive checklists",
-        cat_lists_h: "🎒 Packing Lists & Kits",
-        cat_lists_p: "Camping, bikepacking, carry-on luggage, blackout kit, and DIY toolbelt (A4 Print / PDF)",
-        cat_kitch_b: "{N_KUCH} items",
-        cat_kitch_h: "🍳 Kitchen & Airfryer",
-        cat_kitch_p: "Reference cooking times, food safety temps (74°C for poultry) + Wake Lock timer",
-        cat_work_b: "{N_WARS} items + Calculators",
-        cat_work_h: "🔧 Workshop, Renovation & DIY",
-        cat_work_p: "Paint & concrete calculators, tap drill sizes M2–M20, steel heat treating, 3D printing",
-        cat_bike_b: "{N_ROW} items + Calculator",
-        cat_bike_h: "🚲 Cycling & Bike Wrench",
-        cat_bike_p: "Tire pressure calculator (Hooked / Hookless), tubeless sealant dosage, torque specs (Nm)",
-        home_search_h: "🔍 Search all {N_ALL} tools, calculators & checklists",
-        home_search_lbl: "Type a keyword (e.g. paint, concrete, m8, 1.2842, petg, 40c, chicken):",
-        paint_h2: "🎨 Paint Calculator (How many liters for a room / walls?)",
-        paint_desc: "Enter total wall/ceiling area, subtract doors/windows, and calculate required paint volume including a 10% safety margin.",
-        paint_area_lbl: "Total wall/ceiling surface area (m²):",
-        paint_openings_lbl: "Number of doors & windows (subtracts ~1.8 m² each):",
-        paint_layers_lbl: "Number of coats:",
-        paint_yield_lbl: "Paint coverage per liter (m²/L):",
-        paint_btn: "Calculate paint needed",
-        paint_res_net: "Net paintable area (1 coat)",
-        paint_res_total: "Paint required (+10% margin)",
-        mortar_h2: "🧱 Mortar & Concrete Proportions (10L Bucket & 25kg Bag Scale)",
-        mortar_desc: "Practical renovation mix ratios translated into standard 10-liter construction buckets and 25 kg cement bags.",
-        mortar_type_lbl: "Select mix type:",
-        mortar_opt_concrete: "Standard Concrete (B15/B20) – fence posts, slabs, foundations (1 : 2 : 3)",
-        mortar_opt_masonry: "Masonry / Plastering Mortar – cement-lime mix (1 : 1 : 6)",
-        mortar_opt_cement: "Pure Cement Mortar – high strength, repairs, screeds (1 : 3)",
-        mortar_batches_lbl: "Batch multiplier (1 batch = per one 25 kg cement bag / ~20L):",
-        bike_calc_h2: "Starting Tire Pressure Calculator (Gravel / MTB / Road)",
-        bike_weight_lbl: "Total system weight: rider + bike + gear (40 – 170 kg):",
-        bike_width_lbl: "Actual tire width (mm):",
-        bike_setup_lbl: "Mounting system & rim type:",
-        bike_btn: "Calculate starting pressure",
-        bike_front: "Front (Starting)",
-        bike_rear: "Rear (Starting)"
-    }}
-}};
-
-let currentLang = localStorage.getItem('mn_lang') || 'pl';
-
-function applyLanguage(lang) {{
-    currentLang = lang;
-    localStorage.setItem('mn_lang', lang);
-    document.documentElement.lang = lang;
-    const dict = I18N_DICT[lang] || I18N_DICT.pl;
-    const logoEl = document.getElementById('siteLogo');
-    if (logoEl) logoEl.textContent = dict.logo;
-    const btn = document.getElementById('langToggleBtn');
-    if (btn) btn.textContent = lang === 'pl' ? '🇬🇧 EN' : '🇵🇱 PL';
-
-    document.querySelectorAll('[data-i18n]').forEach(el => {{
-        const key = el.getAttribute('data-i18n');
-        if (dict[key]) el.textContent = dict[key];
-    }});
-
-    if (typeof calcPaint === 'function') calcPaint();
-    if (typeof calcMortar === 'function') calcMortar();
-    if (typeof applyHomeView === 'function') applyHomeView();
-}}
-
-function toggleLanguage() {{
-    applyLanguage(currentLang === 'pl' ? 'en' : 'pl');
-}}
-
-document.addEventListener('DOMContentLoaded', () => {{
-    applyLanguage(currentLang);
-}});
-</script>
+{en_hint_script}</script>
 </body>
 </html>"""
 
@@ -1075,49 +1020,49 @@ LISTY_ITEMS = [
 # Wspólny widget HTML+JS dla kalkulatora Farby i Zaprawy/Betonu
 PAINT_AND_MORTAR_WIDGET = """
 <div class="timer-box" style="text-align:left;" id="paintCalcBox">
-    <h2 style="margin-top:0;" data-i18n="paint_h2">🎨 Kalkulator Farby (Ile litrów na pokój / ściany?)</h2>
-    <p style="font-size:0.9rem;" data-i18n="paint_desc">Wpisz łączną powierzchnię do pomalowania, odejmij okna/drzwi i oblicz potrzebną ilość farby wraz z 10% zapasem.</p>
+    <h2 style="margin-top:0;">🎨 Kalkulator Farby (Ile litrów na pokój / ściany?)</h2>
+    <p style="font-size:0.9rem;">Wpisz łączną powierzchnię do pomalowania, odejmij okna/drzwi i oblicz potrzebną ilość farby wraz z 10% zapasem.</p>
     <div class="form-row">
         <div>
-            <label for="pArea" data-i18n="paint_area_lbl">Powierzchnia ścian/sufitu (m²):</label>
+            <label for="pArea">Powierzchnia ścian/sufitu (m²):</label>
             <input type="number" id="pArea" value="45" min="1" step="1" oninput="calcPaint()">
         </div>
         <div>
-            <label for="pOpenings" data-i18n="paint_openings_lbl">Liczba drzwi i okien (odlicza ~1.8 m²/szt.):</label>
+            <label for="pOpenings">Liczba drzwi i okien (odlicza ~1.8 m²/szt.):</label>
             <input type="number" id="pOpenings" value="3" min="0" step="1" oninput="calcPaint()">
         </div>
     </div>
     <div class="form-row">
         <div>
-            <label for="pLayers" data-i18n="paint_layers_lbl">Liczba warstw malowania:</label>
+            <label for="pLayers">Liczba warstw malowania:</label>
             <input type="number" id="pLayers" value="2" min="1" max="5" step="1" oninput="calcPaint()">
         </div>
         <div>
-            <label for="pYield" data-i18n="paint_yield_lbl">Wydajność farby z puszki (m²/L):</label>
+            <label for="pYield">Wydajność farby z puszki (m²/L):</label>
             <input type="number" id="pYield" value="12" min="1" step="0.5" oninput="calcPaint()">
         </div>
     </div>
-    <button onclick="calcPaint()" data-i18n="paint_btn">Oblicz ilość farby</button>
+    <button onclick="calcPaint()">Oblicz ilość farby</button>
     <div class="param-box" style="margin-top:1rem;" aria-live="polite">
-        <div class="param-item"><div class="label" data-i18n="paint_res_net">Powierzchnia netto (1 warstwa)</div><div class="val" id="pNetVal">39.6 m²</div></div>
-        <div class="param-item"><div class="label" data-i18n="paint_res_total">Potrzebna farba (+10% zapasu)</div><div class="val" id="pLitresVal">7.3 L</div></div>
+        <div class="param-item"><div class="label">Powierzchnia netto (1 warstwa)</div><div class="val" id="pNetVal">39.6 m²</div></div>
+        <div class="param-item"><div class="label">Potrzebna farba (+10% zapasu)</div><div class="val" id="pLitresVal">7.3 L</div></div>
     </div>
 </div>
 
 <div class="timer-box" style="text-align:left;" id="mortarCalcBox">
-    <h2 style="margin-top:0;" data-i18n="mortar_h2">🧱 Kalkulator Zaprawy i Betonu (Przelicznik na wiadra 10L i worki)</h2>
-    <p style="font-size:0.9rem;" data-i18n="mortar_desc">Praktyczne proporcje budowlane przeliczone na zwykłe wiadra budowlane (10 litrów) i worki cementu (25 kg).</p>
+    <h2 style="margin-top:0;">🧱 Kalkulator Zaprawy i Betonu (Przelicznik na wiadra 10L i worki)</h2>
+    <p style="font-size:0.9rem;">Praktyczne proporcje budowlane przeliczone na zwykłe wiadra budowlane (10 litrów) i worki cementu (25 kg).</p>
     <div class="form-row">
         <div>
-            <label for="mType" data-i18n="mortar_type_lbl">Wybierz rodzaj mieszanki:</label>
+            <label for="mType">Wybierz rodzaj mieszanki:</label>
             <select id="mType" onchange="calcMortar()">
-                <option value="concrete" data-i18n="mortar_opt_concrete">Beton roboczy B15/B20 – pod słupki, posadzkę, podmurówkę (1 : 2 : 3)</option>
-                <option value="masonry" data-i18n="mortar_opt_masonry">Zaprawa murarska / tynkarska cementowo-wapienna (1 : 1 : 6)</option>
-                <option value="cement" data-i18n="mortar_opt_cement">Zaprawa czysto cementowa – mocna, podkładowa, reperacje (1 : 3)</option>
+                <option value="concrete">Beton roboczy B15/B20 – pod słupki, posadzkę, podmurówkę (1 : 2 : 3)</option>
+                <option value="masonry">Zaprawa murarska / tynkarska cementowo-wapienna (1 : 1 : 6)</option>
+                <option value="cement">Zaprawa czysto cementowa – mocna, podkładowa, reperacje (1 : 3)</option>
             </select>
         </div>
         <div>
-            <label for="mBatches" data-i18n="mortar_batches_lbl">Mnożnik zarobów (1 zarób = na 1 worek cementu 25 kg / ~20L):</label>
+            <label for="mBatches">Mnożnik zarobów (1 zarób = na 1 worek cementu 25 kg / ~20L):</label>
             <input type="number" id="mBatches" value="1" min="0.5" max="50" step="0.5" oninput="calcMortar()">
         </div>
     </div>
@@ -1192,6 +1137,30 @@ WARS_POZ = f"{N_WARS} {pl_plural(N_WARS, 'pozycja', 'pozycje', 'pozycji')}"
 ROW_POZ = f"{N_ROW} {pl_plural(N_ROW, 'pozycja', 'pozycje', 'pozycji')}"
 LIST_BADGE = f"{N_LIST} {pl_plural(N_LIST, 'interaktywna lista', 'interaktywne listy', 'interaktywnych list')}"
 ALL_POZ = f"{N_ALL} {pl_plural(N_ALL, 'pozycja', 'pozycje', 'pozycji')}"
+
+# 4b. Wersja angielska (My Toolbelt): treści w content_en.py, powiązania adresów PL <-> EN
+import sys
+sys.path.insert(0, SCRIPT_DIR)
+from content_en import WORKSHOP_EN, CYCLING_EN, CALC_EN
+
+assert set(WORKSHOP_EN) <= {x[0] for x in WARSZTAT_ITEMS}, "content_en: nieznany slug warsztatu"
+assert set(CYCLING_EN) <= {x[0] for x in ROWER_ITEMS}, "content_en: nieznany slug rowerowy"
+N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN)
+N_ROW_EN = len(CYCLING_EN)
+
+def _pair(pl_rel, en_rel):
+    ALT_PL2EN[pl_rel] = en_rel
+    ALT_EN2PL[en_rel] = pl_rel
+
+_pair("", "en/")
+_pair("warsztat/", "en/workshop/")
+_pair("rower/", "en/cycling/")
+for _pl_rel, _v in CALC_EN.items():
+    _pair(_pl_rel, _v[0])
+for _slug, _v in WORKSHOP_EN.items():
+    _pair(f"warsztat/{_slug}.html", f"en/workshop/{_v[0]}.html")
+for _slug, _v in CYCLING_EN.items():
+    _pair(f"rower/{_slug}.html", f"en/cycling/{_v[0]}.html")
 
 all_urls = [
     f"{DOMAIN}/",
@@ -1808,11 +1777,11 @@ save_file("warsztat/index.html", wrap_html("Tabele Warsztatowe: Kalkulator Farby
 ROWER_INDEX = f"""
 <h1>🚲 Niezbędnik Rowerowy – Kalkulator Ciśnienia Startowego i Tabele</h1>
 <div class="timer-box" style="text-align:left;">
-    <h2 style="margin-top:0;" data-i18n="bike_calc_h2">Kalkulator ciśnienia startowego w oponach (Gravel / MTB / Szosa)</h2>
+    <h2 style="margin-top:0;">Kalkulator ciśnienia startowego w oponach (Gravel / MTB / Szosa)</h2>
     <p style="font-size:0.9rem;">Oblicza orientacyjny punkt wyjścia na podstawie <strong>masy całkowitej zestawu</strong> oraz szerokości opony.</p>
-    <label for="weight" data-i18n="bike_weight_lbl">Masa całkowita zestawu: kolarz + rower + ekwipunek (40 – 170 kg):</label>
+    <label for="weight">Masa całkowita zestawu: kolarz + rower + ekwipunek (40 – 170 kg):</label>
     <input type="text" inputmode="decimal" id="weight" value="105">
-    <label for="width" data-i18n="bike_width_lbl">Rzeczywista szerokość opony (mm):</label>
+    <label for="width">Rzeczywista szerokość opony (mm):</label>
     <select id="width">
         <option value="25">25 mm (Szosa 700×25c / 25-622)</option>
         <option value="28">28 mm (Szosa 700×28c / 28-622)</option>
@@ -1823,17 +1792,17 @@ ROWER_INDEX = f"""
         <option value="50">50 mm (Monstercross / MTB 29×2.0 / 50-622)</option>
         <option value="57">57 mm (MTB 29×2.25 / 57-622)</option>
     </select>
-    <label for="setup" data-i18n="bike_setup_lbl">System montażu i typ obręczy:</label>
+    <label for="setup">System montażu i typ obręczy:</label>
     <select id="setup">
         <option value="tube">Z dętką (obręcz standardowa Hooked)</option>
         <option value="tubeless_hooked">Tubeless z mleczkiem (obręcz z haczykiem Hooked)</option>
         <option value="tubeless_hookless">Tubeless na obręczy bezrantowej (HOOKLESS – limit 5.0 bar!)</option>
     </select>
-    <button onclick="calcPressure()" data-i18n="bike_btn">Oblicz ciśnienie startowe</button>
+    <button onclick="calcPressure()">Oblicz ciśnienie startowe</button>
     <div id="calcWarn" class="alert-box alert-danger" style="display:none; margin-top:1rem;"></div>
     <div id="res" class="param-box" style="margin-top:1rem;" aria-live="polite">
-        <div class="param-item"><div class="label" data-i18n="bike_front">Przód (Startowe)</div><div class="val" id="pFront">2.5 bar</div></div>
-        <div class="param-item"><div class="label" data-i18n="bike_rear">Tył (Startowe)</div><div class="val" id="pRear">2.7 bar</div></div>
+        <div class="param-item"><div class="label">Przód (Startowe)</div><div class="val" id="pFront">2.5 bar</div></div>
+        <div class="param-item"><div class="label">Tył (Startowe)</div><div class="val" id="pRear">2.7 bar</div></div>
     </div>
     <p style="font-size:0.82rem; margin-top:0.5rem; margin-bottom:0;"><strong>Metoda i limity:</strong> Kalkulator przyjmuje rozkład masy ok. 46% przód / 54% tył oraz współczynnik objętości opony. Dla systemu Hookless automatycznie wymusza górny limit bezpieczeństwa <strong>5.0 bar (72.5 PSI)</strong>. Zawsze sprawdź dopuszczalne ciśnienie na ściance opony i obręczy.</p>
 </div>
@@ -1945,33 +1914,33 @@ save_file("listy/index.html", wrap_html("Listy Pakowania na Wyjazd, Obóz, Biwak
 all_cards = listy_cards + kuchnia_cards + warsztat_cards + rower_cards
 
 HOME_BODY = f"""
-<h1 data-i18n="home_h1">⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy</h1>
-<p data-i18n="home_sub">Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:</p>
+<h1>⚡ MójNiezbędnik.pl – Praktyczne parametry, tabele i interaktywne listy</h1>
+<p>Szybkie punkty wyjścia z podanymi warunkami oraz interaktywne checklisty do druku – bez zbędnych wstępów. Wybierz dział lub wyszukaj narzędzie poniżej:</p>
 <div class="grid" style="margin-bottom:2rem;">
     <a href="/listy/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_lists_b">{LIST_BADGE}</span>
-        <h3 data-i18n="cat_lists_h">🎒 Listy i Niezbędniki</h3>
-        <p class="card-val" data-i18n="cat_lists_p">Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)</p>
+        <span class="badge">{LIST_BADGE}</span>
+        <h3>🎒 Listy i Niezbędniki</h3>
+        <p class="card-val">Co zabrać na obóz, kolonie, zimowisko, biwak, bikepacking i do szpitala (Druk A4 / PDF)</p>
     </a>
     <a href="/kuchnia/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_kitch_b">{KUCH_POZ}</span>
-        <h3 data-i18n="cat_kitch_h">🍳 Kuchnia & Airfryer</h3>
-        <p class="card-val" data-i18n="cat_kitch_p">Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock</p>
+        <span class="badge">{KUCH_POZ}</span>
+        <h3>🍳 Kuchnia & Airfryer</h3>
+        <p class="card-val">Orientacyjne czasy, kryteria temperatury (74°C dla drobiu) + minutnik z Wake Lock</p>
     </a>
     <a href="/warsztat/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_work_b">{WARS_POZ} + Kalkulatory</span>
-        <h3 data-i18n="cat_work_h">🔧 Warsztat, Remont & DIY</h3>
-        <p class="card-val" data-i18n="cat_work_p">Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D</p>
+        <span class="badge">{WARS_POZ} + Kalkulatory</span>
+        <h3>🔧 Warsztat, Remont & DIY</h3>
+        <p class="card-val">Kalkulator farby i betonu, wiertła pod gwinty M2–M20, obróbka cieplna stali, druk 3D</p>
     </a>
     <a href="/rower/" class="card" style="border-color:var(--accent);">
-        <span class="badge" data-i18n="cat_bike_b">{ROW_POZ} + Kalkulator</span>
-        <h3 data-i18n="cat_bike_h">🚲 Rower & Serwis</h3>
-        <p class="card-val" data-i18n="cat_bike_p">Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm</p>
+        <span class="badge">{ROW_POZ} + Kalkulator</span>
+        <h3>🚲 Rower & Serwis</h3>
+        <p class="card-val">Kalkulator ciśnienia (Hooked / Hookless), dawki mleczka tubeless, momenty Nm</p>
     </a>
 </div>
 
-<h2 data-i18n="home_search_h">🔍 Wyszukiwarka wszystkich {N_ALL} narzędzi, kalkulatorów i list</h2>
-<label for="q" data-i18n="home_search_lbl">Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):</label>
+<h2>🔍 Wyszukiwarka wszystkich {N_ALL} narzędzi, kalkulatorów i list</h2>
+<label for="q">Wpisz szukaną frazę (obsługuje zapytania bez polskich znaków i spacji, np. farba, beton, oboz, piers, m 8, 40-622):</label>
 <input type="text" id="q" placeholder="Szukaj np. farba, beton, obóz, kurczak, M8, 1.2842, PETG, 40c..." oninput="filterHome()">
 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem;">
     <span id="viewStatus" style="font-size:0.9rem; color:var(--muted);">Wyświetlono: 20 wybranych narzędzi i list</span>
@@ -2028,6 +1997,374 @@ applyHomeView();
 </script>
 """
 save_file("index.html", wrap_html("Szybkie Kalkulatory, Listy Pakowania, Czasy Airfryer i Tabele Warsztatowe", "Praktyczny niezbędnik online: kalkulator farby i betonu, listy rzeczy na obóz i biwak, czasy pieczenia w Airfryerze, tabele wierteł pod gwinty i kalkulator ciśnienia w oponach.", HOME_BODY, ""))
+
+# 11b. Wersja angielska (My Toolbelt) – /en/
+EN_WIDGET = """
+<div class="timer-box" style="text-align:left;" id="paintCalcBox">
+    <h2 style="margin-top:0;">🎨 Paint Calculator (how many litres for a room?)</h2>
+    <p style="font-size:0.9rem;">Enter the total area to paint, deduct doors and windows, and get the amount of paint you need including a 10% margin.</p>
+    <div class="form-row">
+        <div>
+            <label for="pArea">Wall / ceiling area (m²):</label>
+            <input type="number" id="pArea" value="45" min="1" step="1" oninput="calcPaint()">
+        </div>
+        <div>
+            <label for="pOpenings">Number of doors and windows (deducts ~1.8 m² each):</label>
+            <input type="number" id="pOpenings" value="3" min="0" step="1" oninput="calcPaint()">
+        </div>
+    </div>
+    <div class="form-row">
+        <div>
+            <label for="pLayers">Number of coats:</label>
+            <input type="number" id="pLayers" value="2" min="1" max="5" step="1" oninput="calcPaint()">
+        </div>
+        <div>
+            <label for="pYield">Paint coverage from the tin (m²/L):</label>
+            <input type="number" id="pYield" value="12" min="1" step="0.5" oninput="calcPaint()">
+        </div>
+    </div>
+    <button onclick="calcPaint()">Calculate paint</button>
+    <div class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label">Net area (1 coat)</div><div class="val" id="pNetVal">39.6 m²</div></div>
+        <div class="param-item"><div class="label">Paint needed (+10% margin)</div><div class="val" id="pLitresVal">7.3 L</div></div>
+    </div>
+    <p style="font-size:0.82rem; margin:0.5rem 0 0;">Tip: 1 m² ≈ 10.76 sq ft, 1 litre ≈ 0.26 US gallons.</p>
+</div>
+
+<div class="timer-box" style="text-align:left;" id="mortarCalcBox">
+    <h2 style="margin-top:0;">🧱 Concrete &amp; Mortar Mix Calculator (10 L buckets and 25 kg bags)</h2>
+    <p style="font-size:0.9rem;">Practical volume ratios converted to standard 10-litre buckets and 25 kg cement bags (metric, as sold in Europe).</p>
+    <div class="form-row">
+        <div>
+            <label for="mType">Choose the mix:</label>
+            <select id="mType" onchange="calcMortar()">
+                <option value="concrete">General-purpose concrete (approx. C12/15–C16/20) – post footings, slabs, foundations (1 : 2 : 3)</option>
+                <option value="masonry">Cement-lime masonry / render mortar (1 : 1 : 6)</option>
+                <option value="cement">Pure cement mortar – strong, bedding, repairs (1 : 3)</option>
+            </select>
+        </div>
+        <div>
+            <label for="mBatches">Number of batches (1 batch = one 25 kg cement bag / ~20 L):</label>
+            <input type="number" id="mBatches" value="1" min="0.5" max="50" step="0.5" oninput="calcMortar()">
+        </div>
+    </div>
+    <div id="mortarResBox" class="info-box" style="border-color:var(--accent); margin-top:0.5rem;"></div>
+</div>
+""" + PAINT_AND_MORTAR_WIDGET[PAINT_AND_MORTAR_WIDGET.index("<script>"):]
+
+workshop_cards_en = []
+cycling_cards_en = []
+
+# Kalkulatory
+for _pl_rel, (en_rel, c_title, c_desc, c_h1, c_crumb) in CALC_EN.items():
+    all_urls.append(f"{DOMAIN}/{en_rel}")
+    if "paint" in en_rel:
+        workshop_cards_en.append(f'<a href="/{en_rel}" class="card" data-sub="przeliczniki"><span class="badge">🎨 Renovation &amp; Building</span><h3>Paint Calculator per m² (how many litres for a room?)</h3><p class="card-val">Deducts doors/windows  |  +10% margin</p></a>')
+    else:
+        workshop_cards_en.append(f'<a href="/{en_rel}" class="card" data-sub="przeliczniki"><span class="badge">🧱 Renovation &amp; Building</span><h3>Concrete &amp; Mortar Mix Ratios (10 L buckets and bags)</h3><p class="card-val">Concrete 1:2:3  |  Mortar 1:1:6 and 1:3</p></a>')
+    calc_body = f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » {c_crumb}</div>
+<h1>{c_h1}</h1>
+{EN_WIDGET}
+<p style="margin-top:1.5rem;"><a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
+"""
+    save_file(en_rel, wrap_html(c_title, c_desc, calc_body, en_rel, lang="en"))
+
+SUB_LABELS_W_EN = {
+    "gwinty": "🔩 Threads",
+    "stal": "🔥 Heat treatment",
+    "druk3d": "🖨️ 3D printing",
+    "przeliczniki": "📐 Conversions &amp; building",
+}
+COND_W_EN = {
+    "gwinty": """
+        <h2>Scope and workshop standards</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>Thread type:</strong> the main value is for ISO metric coarse threads (ISO 261 / DIN 13-1) made with a cutting tap.</li>
+                <li><strong>Forming (fluteless) taps:</strong> need a larger pilot hole than cutting taps – check the tool maker's chart.</li>
+                <li><strong>Fine threads:</strong> always measure the bolt's pitch with a thread gauge before drilling (especially from M8 up, on cars and bicycle parts).</li>
+            </ul>
+        </div>""",
+    "stal": """
+        <h2>Conditions for a correct heat treatment</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>Temperature and time control:</strong> high-alloy steels (e.g. D2, 440C) need a stable soak in a PID-controlled kiln and protection from decarburisation (heat-treat foil).</li>
+                <li><strong>Quench medium:</strong> the temperature of the quench oil (usually warmed to 50–60°C) is key to avoiding quench cracks.</li>
+                <li><strong>Tempering:</strong> temper right after the part cools to about 50°C – hardened steel left untempered can crack on its own.</li>
+            </ul>
+        </div>""",
+    "druk3d": """
+        <h2>Test conditions and calibration</h2>
+        <div class="info-box">
+            <ul>
+                <li><strong>Starting point:</strong> different filament brands and blends (matte, silk, CF, high-speed) shift the melt temperature by as much as 15–20°C.</li>
+                <li><strong>Volumetric flow:</strong> when printing fast (e.g. &gt;200 mm/s) raise the nozzle temperature so the core of the filament has time to melt.</li>
+            </ul>
+        </div>""",
+}
+COND_W_EN_DEFAULT = """
+        <h2>Additional workshop notes</h2>
+        <div class="info-box">
+            <p>Always check the requirements in the manual for your device or tool before using conversion values in practice.</p>
+        </div>"""
+
+for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in WARSZTAT_ITEMS:
+    if slug not in WORKSHOP_EN:
+        continue
+    en_slug, title, val1, val2, tip = WORKSHOP_EN[slug]
+    rel_url = f"en/workshop/{en_slug}.html"
+    all_urls.append(f"{DOMAIN}/{rel_url}")
+    badge_txt = SUB_LABELS_W_EN.get(sub_cat, "🔧 Workshop")
+    workshop_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="{sub_cat}"><span class="badge">{badge_txt}</span><h3>{title}</h3><p class="card-val">{val1}  |  {val2}</p></a>')
+    extra_alert = ""
+    if sub_cat == "stal":
+        extra_alert = """<div class="alert-box"><strong>🔥 Technical note:</strong> heat-treatment parameters are typical catalogue ranges. Before hardening, always check the material data sheet (certificate) from the supplier of your batch of steel.</div>"""
+    body = f"""
+    <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » {title}</div>
+    <h1>{title}</h1>
+    <p>Quick reference value – check the conditions of use below.</p>
+    {extra_alert}
+    <div class="param-box">
+        <div class="param-item"><div class="label">Reference value</div><div class="val">{val1}</div></div>
+        <div class="param-item"><div class="label">Details / range</div><div class="val" style="font-size:1.35rem;">{val2}</div></div>
+    </div>
+    <h2>🛠️ Practical tip</h2>
+    <div class="info-box"><p>{tip}</p></div>
+    {COND_W_EN.get(sub_cat, COND_W_EN_DEFAULT)}
+    <p style="margin-top:1.5rem;"><a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
+    """
+    save_file(rel_url, wrap_html(title, f"{title} – reference value ({val1}) with conditions of use.", body, rel_url, lang="en"))
+
+SUB_LABELS_R_EN = {
+    "opony": "🛞 Tyres &amp; pressure",
+    "serwis": "🔧 Assembly &amp; drivetrain",
+    "dopasowanie": "📐 Bike fit &amp; training",
+}
+for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in ROWER_ITEMS:
+    if slug not in CYCLING_EN:
+        continue
+    en_slug, title, val1, val2, tip = CYCLING_EN[slug]
+    rel_url = f"en/cycling/{en_slug}.html"
+    all_urls.append(f"{DOMAIN}/{rel_url}")
+    badge_txt = SUB_LABELS_R_EN.get(sub_cat, "🚲 Cycling")
+    cycling_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="{sub_cat}"><span class="badge">{badge_txt}</span><h3>{title}</h3><p class="card-val">{val1}  |  {val2}</p></a>')
+    extra_alert = ""
+    if "cisnienie" in slug:
+        extra_alert = """<div class="alert-box alert-danger"><strong>⚠️ Safety limits (hookless rims and tyres):</strong> these are <strong>starting pressures to fine-tune</strong>, calculated for the <strong>total system weight (rider + bike + gear)</strong>. Never exceed the maximum printed on the tyre sidewall or the rim limit. For hookless rims the absolute maximum is usually <strong>5.0 bar (72.5 PSI)</strong>!</div>"""
+    elif "momenty" in slug:
+        extra_alert = """<div class="alert-box"><strong>🔧 Important:</strong> typical values do not replace the instructions for your specific component. Before tightening, check the torque marking printed on the stem, handlebar or seatpost.</div>"""
+    body = f"""
+    <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/cycling/">Cycling</a> » {title}</div>
+    <h1>{title}</h1>
+    <p>Reference values for gravel, MTB and road bikes – check the range and conditions below.</p>
+    {extra_alert}
+    <div class="param-box">
+        <div class="param-item"><div class="label">Starting point / value</div><div class="val">{val1}</div></div>
+        <div class="param-item"><div class="label">Variant / details</div><div class="val" style="font-size:1.35rem;">{val2}</div></div>
+    </div>
+    <h2>🚲 Service tip and conditions</h2>
+    <div class="info-box"><p>{tip}</p></div>
+    <p style="margin-top:1.5rem;"><a href="/en/cycling/" class="btn">← Back to the calculator and cycling tables</a></p>
+    """
+    save_file(rel_url, wrap_html(title, f"{title} – starting point ({val1}), safety limits and service tips.", body, rel_url, lang="en"))
+
+wax_en = WORKSHOP_EN.get("wosk-do-lancucha-proporcje-parafina-ptfe")
+wax_cross_card_en = ""
+if wax_en:
+    wax_cross_card_en = f'<a href="/en/workshop/{wax_en[0]}.html" class="card" data-sub="serwis"><span class="badge">🔧 Assembly &amp; drivetrain</span><h3>{wax_en[1]}</h3><p class="card-val">500 g paraffin + 5 g PTFE  |  Bath: 75–85°C</p></a>'
+
+FILTER_JS_EN = """
+<script>
+let currentSub = 'all';
+function setSub(sub, btn) {
+    currentSub = sub;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterCards();
+}
+function filterCards() {
+    const q = normStr(document.getElementById('q').value);
+    let visible = 0;
+    document.querySelectorAll('#cards .card').forEach(c => {
+        const matchSub = (currentSub === 'all' || c.getAttribute('data-sub') === currentSub);
+        const matchText = normStr(c.textContent).includes(q);
+        const show = matchSub && matchText;
+        c.style.display = show ? 'flex' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+"""
+
+SUBW_EN = Counter(x[5] for x in WARSZTAT_ITEMS if x[0] in WORKSHOP_EN)
+SUBR_EN = Counter(x[5] for x in ROWER_ITEMS if x[0] in CYCLING_EN)
+
+workshop_filters_en = [f"""<button class="filter-btn active" onclick="setSub('all', this)">All ({N_WARS_EN})</button>"""]
+for _sub, _label in SUB_LABELS_W_EN.items():
+    _n = SUBW_EN.get(_sub, 0) + (len(CALC_EN) if _sub == "przeliczniki" else 0)
+    if _n:
+        workshop_filters_en.append(f"""<button class="filter-btn" onclick="setSub('{_sub}', this)">{_label} ({_n})</button>""")
+
+WORKSHOP_INDEX_EN = f"""
+<h1>🔧 Workshop &amp; DIY Reference – Threads, Steel, 3D Printing, Calculators</h1>
+{EN_WIDGET}
+<h2>All workshop and building tables</h2>
+<p>Pick a sub-category below or type what you're looking for (e.g. M8, paint, concrete, D2, PETG, 50:1):</p>
+<div class="filter-bar" role="group" aria-label="Workshop sub-category filter">
+    {chr(10).join(workshop_filters_en)}
+</div>
+<label for="q">Search the workshop:</label>
+<input type="text" id="q" placeholder="🔍 e.g. paint, concrete, m8, 440c, o2, petg, 2-stroke..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(workshop_cards_en)}
+</div>
+<div id="noRes" class="no-results">No matching items for the selected criteria.</div>
+<p style="font-size:0.85rem;">Electrical wiring tables are available only in the Polish version, because cable sizing rules differ between countries.</p>
+{FILTER_JS_EN}
+"""
+save_file("en/workshop/index.html", wrap_html("Workshop Tables: Paint & Concrete Calculators, Tap Drill Sizes, Heat Treating", "Quick workshop calculators and tables: paint and concrete calculators, tap drill sizes M2–M20, steel heat treatment, 3D printing temperatures.", WORKSHOP_INDEX_EN, "en/workshop/", lang="en"))
+
+cycling_filters_en = [f"""<button class="filter-btn active" onclick="setSub('all', this)">All ({N_ROW_EN + (1 if wax_cross_card_en else 0)})</button>"""]
+for _sub, _label in SUB_LABELS_R_EN.items():
+    _n = SUBR_EN.get(_sub, 0) + (1 if (_sub == "serwis" and wax_cross_card_en) else 0)
+    if _n:
+        cycling_filters_en.append(f"""<button class="filter-btn" onclick="setSub('{_sub}', this)">{_label} ({_n})</button>""")
+
+CYCLING_INDEX_EN = f"""
+<h1>🚲 Cycling Reference – Tyre Pressure Calculator and Tables</h1>
+<div class="timer-box" style="text-align:left;">
+    <h2 style="margin-top:0;">Starting tyre pressure calculator (gravel / MTB / road)</h2>
+    <p style="font-size:0.9rem;">Gives an approximate starting point based on the <strong>total system weight</strong> and the tyre width.</p>
+    <label for="weight">Total system weight: rider + bike + gear (40 – 170 kg):</label>
+    <input type="text" inputmode="decimal" id="weight" value="105">
+    <label for="width">Actual tyre width (mm):</label>
+    <select id="width">
+        <option value="25">25 mm (Road 700×25c / 25-622)</option>
+        <option value="28">28 mm (Road 700×28c / 28-622)</option>
+        <option value="32">32 mm (Road Plus 700×32c / 32-622)</option>
+        <option value="35">35 mm (Gravel 700×35c / 35-622)</option>
+        <option value="40" selected>40 mm (Gravel 700×40c / 40-622)</option>
+        <option value="45">45 mm (Gravel 700×45c / 45-622)</option>
+        <option value="50">50 mm (Monstercross / MTB 29×2.0 / 50-622)</option>
+        <option value="57">57 mm (MTB 29×2.25 / 57-622)</option>
+    </select>
+    <label for="setup">Setup and rim type:</label>
+    <select id="setup">
+        <option value="tube">Inner tube (standard hooked rim)</option>
+        <option value="tubeless_hooked">Tubeless with sealant (hooked rim)</option>
+        <option value="tubeless_hookless">Tubeless on a hookless rim (HOOKLESS – 5.0 bar limit!)</option>
+    </select>
+    <button onclick="calcPressure()">Calculate starting pressure</button>
+    <div id="calcWarn" class="alert-box alert-danger" style="display:none; margin-top:1rem;"></div>
+    <div id="res" class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label">Front (starting)</div><div class="val" id="pFront">2.5 bar</div></div>
+        <div class="param-item"><div class="label">Rear (starting)</div><div class="val" id="pRear">2.7 bar</div></div>
+    </div>
+    <p style="font-size:0.82rem; margin-top:0.5rem; margin-bottom:0;"><strong>Method and limits:</strong> the calculator assumes a weight split of about 46% front / 54% rear and a tyre-volume factor. For hookless rims it automatically caps the result at <strong>5.0 bar (72.5 PSI)</strong>. Always check the allowed pressure on the tyre sidewall and the rim.</p>
+</div>
+
+<h2>All cycling tables and tips</h2>
+<div class="filter-bar" role="group" aria-label="Cycling sub-category filter">
+    {chr(10).join(cycling_filters_en)}
+</div>
+<label for="q">Search cycling:</label>
+<input type="text" id="q" placeholder="🔍 e.g. 40c, 40-622, sealant, wax, torque Nm..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(cycling_cards_en) + wax_cross_card_en}
+</div>
+<div id="noRes" class="no-results">No matching cycling items.</div>
+<script>
+function calcPressure() {{
+    const rawW = document.getElementById('weight').value.replace(',', '.');
+    let w = parseFloat(rawW);
+    const warnEl = document.getElementById('calcWarn');
+    warnEl.style.display = 'none';
+
+    if (isNaN(w) || w < 40 || w > 170) {{
+        warnEl.textContent = "⚠️ Enter a valid total system weight (rider + bike + gear) between 40 and 170 kg.";
+        warnEl.style.display = 'block';
+        w = Math.min(170, Math.max(40, isNaN(w) ? 95 : w));
+        document.getElementById('weight').value = w;
+    }}
+
+    const width = parseFloat(document.getElementById('width').value) || 40;
+    const setup = document.getElementById('setup').value;
+    const isTl = setup.startsWith('tubeless');
+    const isHookless = (setup === 'tubeless_hookless');
+
+    let base = (w / (width * 1.48));
+    if (width <= 32) base *= 1.95;
+    if (isTl) base *= 0.88;
+
+    let front = Math.max(1.1, (base * 0.94));
+    let rear = Math.max(1.2, (base * 1.03));
+
+    if (isHookless) {{
+        if (width < 28) {{
+            warnEl.innerHTML = "🚨 <strong>WARNING (hookless):</strong> most hookless rim makers do not allow tyres narrower than 28 mm (700×28c)! Check your wheel maker's compatibility chart. Maximum pressure has been capped at 5.0 bar.";
+            warnEl.style.display = 'block';
+        }} else if (front > 5.0 || rear > 5.0) {{
+            warnEl.innerHTML = "⚠️ <strong>Hookless limit (5.0 bar):</strong> the calculated pressure exceeded the limit for hookless rims. The value has been capped at 5.0 bar (72.5 PSI)!";
+            warnEl.style.display = 'block';
+        }}
+        front = Math.min(5.0, front);
+        rear = Math.min(5.0, rear);
+    }}
+
+    const psi = (b) => Math.round(b * 14.5038);
+    document.getElementById('pFront').textContent = front.toFixed(1) + " bar (" + psi(front) + " PSI)";
+    document.getElementById('pRear').textContent = rear.toFixed(1) + " bar (" + psi(rear) + " PSI)";
+}}
+calcPressure();
+</script>
+{FILTER_JS_EN}
+"""
+save_file("en/cycling/index.html", wrap_html("Tyre Pressure Calculator and Cycling Tables", "Calculate starting tyre pressure for gravel, MTB and road tyres, with hookless limits and total system weight.", CYCLING_INDEX_EN, "en/cycling/", lang="en"))
+
+HOME_BODY_EN = f"""
+<h1>⚡ My Toolbelt – No-Fluff Workshop &amp; Cycling Calculators</h1>
+<p>Quick reference tables and starting parameters with their conditions of use – without endless introductions. Choose a section or search below:</p>
+<div class="grid" style="margin-bottom:2rem;">
+    <a href="/en/workshop/" class="card">
+        <span class="badge">{N_WARS_EN} items + calculators</span>
+        <h3>🔧 Workshop, Renovation &amp; DIY</h3>
+        <p>Paint and concrete calculators, tap drill sizes M2–M20, steel heat treatment, 3D printing temperatures</p>
+    </a>
+    <a href="/en/cycling/" class="card">
+        <span class="badge">{N_ROW_EN} items + calculator</span>
+        <h3>🚲 Cycling &amp; Bike Service</h3>
+        <p>Tyre pressure calculator (hooked / hookless), tubeless sealant amounts, torque specs</p>
+    </a>
+</div>
+
+<h2>🔍 Search all {N_WARS_EN + N_ROW_EN} tools and tables</h2>
+<label for="q">Type what you're looking for (e.g. paint, concrete, m8, d2, petg, 40c, sealant):</label>
+<input type="text" id="q" placeholder="Search e.g. paint, M8, 440C, PETG, 40c..." oninput="filterCards()">
+<div class="grid" id="cards">
+{''.join(workshop_cards_en + cycling_cards_en)}
+</div>
+<div id="noRes" class="no-results">No matching tool found. Check the spelling or go straight to a section above.</div>
+<p style="font-size:0.85rem; margin-top:1.5rem;">Kitchen (air fryer times) and printable packing lists are currently available in the <a href="/" hreflang="pl" lang="pl" style="color:var(--accent);">Polish version</a>.</p>
+<script>
+function filterCards() {{
+    const q = normStr(document.getElementById('q').value);
+    let visible = 0;
+    document.querySelectorAll('#cards .card').forEach(c => {{
+        const show = normStr(c.textContent).includes(q);
+        c.style.display = show ? 'flex' : 'none';
+        if (show) visible++;
+    }});
+    document.getElementById('noRes').style.display = visible === 0 ? 'block' : 'none';
+}}
+</script>
+"""
+all_urls.append(f"{DOMAIN}/en/")
+all_urls.append(f"{DOMAIN}/en/workshop/")
+all_urls.append(f"{DOMAIN}/en/cycling/")
+save_file("en/index.html", wrap_html("Quick Workshop Calculators, Tap Drill Sizes and Tyre Pressure Tables", "No-fluff toolbelt: paint and concrete calculators, tap drill sizes, steel heat treatment, 3D printing temperatures and a bike tyre pressure calculator.", HOME_BODY_EN, "en/", lang="en"))
 
 # 12. Strona 404, sitemap.xml (z prawdziwymi datami zmian) oraz robots.txt
 NOT_FOUND_BODY = """
