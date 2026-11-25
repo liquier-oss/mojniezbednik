@@ -1282,7 +1282,7 @@ calcMortar();
 
 # Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
 N_KUCH = len(KUCHNIA_ITEMS) + 2           # + przelicznik piekarnik -> Airfryer i miar kuchennych
-N_WARS = len(WARSZTAT_ITEMS) + 2          # + kalkulator farby i zaprawy
+N_WARS = len(WARSZTAT_ITEMS) + 4          # + kalkulatory: farba, zaprawa, płytki, panele
 N_ROW = len(ROWER_ITEMS)
 N_LIST = len(LISTY_ITEMS)
 N_ALL = N_KUCH + N_WARS + N_ROW + N_LIST
@@ -1301,7 +1301,7 @@ from content_en import WORKSHOP_EN, CYCLING_EN, CALC_EN, KITCHEN_EN, LISTS_EN
 
 assert set(WORKSHOP_EN) <= {x[0] for x in WARSZTAT_ITEMS}, "content_en: nieznany slug warsztatu"
 assert set(CYCLING_EN) <= {x[0] for x in ROWER_ITEMS}, "content_en: nieznany slug rowerowy"
-N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN)
+N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN) + 2
 N_ROW_EN = len(CYCLING_EN)
 assert set(KITCHEN_EN) <= {x[0] for x in KUCHNIA_ITEMS}, "content_en: nieznany slug kuchni"
 assert set(LISTS_EN) <= {x[0] for x in LISTY_ITEMS}, "content_en: nieznany slug listy"
@@ -1315,6 +1315,8 @@ def _pair(pl_rel, en_rel):
 _pair("", "en/")
 _pair("warsztat/", "en/workshop/")
 _pair("rower/", "en/cycling/")
+_pair("warsztat/kalkulator-plytek-fugi-kleju.html", "en/workshop/tile-grout-adhesive-calculator.html")
+_pair("warsztat/kalkulator-paneli-podlogowych.html", "en/workshop/laminate-flooring-calculator.html")
 _pair("kuchnia/", "en/kitchen/")
 _pair("kuchnia/przelicznik-piekarnik-airfryer.html", "en/kitchen/oven-to-air-fryer-converter.html")
 _pair("kuchnia/przelicznik-miar-kuchennych.html", "en/kitchen/cups-to-grams-converter.html")
@@ -1738,6 +1740,214 @@ mortar_page_body = f"""
 """
 save_file(mortar_rel, wrap_html("Proporcje Zaprawy i Betonu na Wiadra 10L i Worki 25kg", "Praktyczny kalkulator i tabela proporcji betonu (1:2:3) oraz zaprawy murarskiej (1:1:6, 1:3) przeliczona na wiadra budowlane.", mortar_page_body, mortar_rel))
 
+
+# 7b. Kalkulatory remontowe: płytki (fuga, klej, paczki) i panele podłogowe – PL i EN
+# Fuga: kg/m² = (A+B)/(A·B) · C · D · 1,6 (A,B wymiary płytki mm, C grubość mm, D szerokość spoiny mm)
+# Klej: wg kart technicznych (np. Ceresit CM 11): bok ≤10 cm 2,0 · ≤15 cm 2,7 · ≤25 cm 3,4 · ≤33 cm 4,2 kg/m²,
+#       większe formaty 4,5–6 kg/m² (paca 10–12 mm, często podwójne smarowanie)
+# Zapas płytek (Murator): prosto 10/5/3 % (≤10 / 10–50 / >50 m²), karo 15/10/7 %, jodełka 15 %
+# Zapas paneli: prosto 5 %, po skosie 10 %, jodełka 15 %; dylatacja 8–15 mm
+RENO_TXT = {
+    "pl": dict(
+        t_h2="🧱 Kalkulator płytek: ile płytek, fugi i kleju?", area="Powierzchnia do wyłożenia (m²):", tl="Długość płytki (cm):", tw="Szerokość płytki (cm):",
+        tt="Grubość płytki (mm):", tj="Szerokość fugi (mm):", lay="Sposób układania:", l1="Prosto", l2="Po skosie (karo)", l3="Jodełka",
+        box="Płytek w paczce (m², z etykiety):", btn="Oblicz",
+        r_tiles="Płytki do kupienia", r_box="Paczki", r_grout="Fuga", r_glue="Klej", pcs="szt.", pk="op.", pk2="op.", bag="worki 25 kg",
+        t_note="Zapas na docinki:", trowel="Paca zębata ok.", dbl="+ podwójne smarowanie",
+        p_h2="🪵 Kalkulator paneli podłogowych", rl="Długość pokoju (m):", rw="Szerokość pokoju (m):", pp="Paneli w paczce (m², z etykiety):",
+        doors="Liczba drzwi (odejmuje ok. 0,9 m listwy):", sk="Długość listwy przypodłogowej (m):",
+        r_area="Powierzchnia podłogi", r_pk="Paczki paneli", r_under="Podkład", r_sk="Listwy przypodłogowe", p_note="Zapas:", gap="Zostaw szczelinę dylatacyjną 8–15 mm przy ścianach."),
+    "en": dict(
+        t_h2="🧱 Tile Calculator: how many tiles, how much grout and adhesive?", area="Area to tile (m²):", tl="Tile length (cm):", tw="Tile width (cm):",
+        tt="Tile thickness (mm):", tj="Grout joint width (mm):", lay="Layout:", l1="Straight", l2="Diagonal", l3="Herringbone",
+        box="Tiles per box (m², from the label):", btn="Calculate",
+        r_tiles="Tiles to buy", r_box="Boxes", r_grout="Grout", r_glue="Tile adhesive", pcs="pcs", pk="boxes", pk2="packs", bag="25 kg bags",
+        t_note="Allowance for cuts:", trowel="Notched trowel approx.", dbl="+ back-buttering",
+        p_h2="🪵 Laminate / Vinyl Flooring Calculator", rl="Room length (m):", rw="Room width (m):", pp="Flooring per pack (m², from the label):",
+        doors="Number of doors (subtracts about 0.9 m of skirting):", sk="Skirting board length (m):",
+        r_area="Floor area", r_pk="Packs of flooring", r_under="Underlay", r_sk="Skirting boards", p_note="Allowance:", gap="Leave an 8–15 mm expansion gap at the walls."),
+}
+
+def tiles_widget(lang):
+    L = RENO_TXT[lang]
+    return f"""
+<div class="timer-box" style="text-align:left;" id="tileBox">
+    <h2 style="margin-top:0;">{L['t_h2']}</h2>
+    <div class="form-row">
+        <div><label for="tA">{L['area']}</label><input type="text" inputmode="decimal" id="tA" value="12" oninput="calcTiles()"></div>
+        <div><label for="tLay">{L['lay']}</label><select id="tLay" onchange="calcTiles()"><option value="s">{L['l1']}</option><option value="d">{L['l2']}</option><option value="h">{L['l3']}</option></select></div>
+    </div>
+    <div class="form-row">
+        <div><label for="tL">{L['tl']}</label><input type="text" inputmode="decimal" id="tL" value="60" oninput="calcTiles()"></div>
+        <div><label for="tW">{L['tw']}</label><input type="text" inputmode="decimal" id="tW" value="60" oninput="calcTiles()"></div>
+    </div>
+    <div class="form-row">
+        <div><label for="tT">{L['tt']}</label><input type="text" inputmode="decimal" id="tT" value="9" oninput="calcTiles()"></div>
+        <div><label for="tJ">{L['tj']}</label><input type="text" inputmode="decimal" id="tJ" value="2" oninput="calcTiles()"></div>
+        <div><label for="tBox">{L['box']}</label><input type="text" inputmode="decimal" id="tBox" value="1.44" oninput="calcTiles()"></div>
+    </div>
+    <button onclick="calcTiles()">{L['btn']}</button>
+    <div class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label">{L['r_tiles']}</div><div class="val" id="tRTiles">–</div></div>
+        <div class="param-item"><div class="label">{L['r_box']}</div><div class="val" id="tRBox">–</div></div>
+        <div class="param-item"><div class="label">{L['r_grout']}</div><div class="val" id="tRGrout">–</div></div>
+        <div class="param-item"><div class="label">{L['r_glue']}</div><div class="val" id="tRGlue">–</div></div>
+    </div>
+    <p id="tNote" style="font-size:0.9rem; margin-bottom:0;"></p>
+</div>
+<script>
+function _n(id) {{ return parseFloat((document.getElementById(id).value || '').replace(',', '.')) || 0; }}
+function _f(x, d) {{ return (Math.round(x * Math.pow(10, d)) / Math.pow(10, d)).toString().replace('.', {"','" if lang == "pl" else "'.'"}); }}
+function calcTiles() {{
+    const area = _n('tA'), L = _n('tL') * 10, W = _n('tW') * 10, T = _n('tT') || 9, J = _n('tJ'), box = _n('tBox');
+    const lay = document.getElementById('tLay').value;
+    if (!area || !L || !W) return;
+    let waste;
+    if (lay === 'h') waste = 15;
+    else if (lay === 'd') waste = area <= 10 ? 15 : (area <= 50 ? 10 : 7);
+    else waste = area <= 10 ? 10 : (area <= 50 ? 5 : 3);
+    const areaW = area * (1 + waste / 100);
+    const tileM2 = ((L + J) * (W + J)) / 1e6;
+    const pcs = Math.ceil(areaW / tileM2);
+    const boxes = box > 0 ? Math.ceil(areaW / box) : 0;
+    const groutKg = (L + W) / (L * W) * T * J * 1.6 * area * 1.1;
+    const side = Math.max(L, W) / 10;
+    let glue, trowel, dbl = false;
+    if (side <= 10) {{ glue = 2.0; trowel = '4 mm'; }}
+    else if (side <= 15) {{ glue = 2.7; trowel = '6 mm'; }}
+    else if (side <= 25) {{ glue = 3.4; trowel = '8 mm'; }}
+    else if (side <= 33.4) {{ glue = 4.2; trowel = '10 mm'; }}
+    else if (side <= 60) {{ glue = 5.0; trowel = '10–12 mm'; }}
+    else {{ glue = 6.0; trowel = '12 mm'; dbl = true; }}
+    const glueKg = glue * area;
+    document.getElementById('tRTiles').textContent = pcs + ' {L['pcs']}';
+    document.getElementById('tRBox').textContent = boxes ? (boxes + ' {L['pk']}') : '–';
+    document.getElementById('tRGrout').textContent = '~' + _f(groutKg, 1) + ' kg';
+    document.getElementById('tRGlue').textContent = '~' + Math.ceil(glueKg) + ' kg (' + Math.ceil(glueKg / 25) + ' × 25 kg)';
+    document.getElementById('tNote').textContent = '{L['t_note']} ' + waste + '% (' + _f(areaW, 2) + ' m²). {L['trowel']} ' + trowel + (dbl ? ' {L['dbl']}' : '') + '.';
+}}
+calcTiles();
+</script>
+"""
+
+def floor_widget(lang):
+    L = RENO_TXT[lang]
+    return f"""
+<div class="timer-box" style="text-align:left;" id="floorBox">
+    <h2 style="margin-top:0;">{L['p_h2']}</h2>
+    <div class="form-row">
+        <div><label for="fL">{L['rl']}</label><input type="text" inputmode="decimal" id="fL" value="4.5" oninput="calcFloor()"></div>
+        <div><label for="fW">{L['rw']}</label><input type="text" inputmode="decimal" id="fW" value="3.6" oninput="calcFloor()"></div>
+    </div>
+    <div class="form-row">
+        <div><label for="fLay">{L['lay']}</label><select id="fLay" onchange="calcFloor()"><option value="5">{L['l1']}</option><option value="10">{L['l2']}</option><option value="15">{L['l3']}</option></select></div>
+        <div><label for="fPk">{L['pp']}</label><input type="text" inputmode="decimal" id="fPk" value="2.13" oninput="calcFloor()"></div>
+    </div>
+    <div class="form-row">
+        <div><label for="fD">{L['doors']}</label><input type="text" inputmode="decimal" id="fD" value="1" oninput="calcFloor()"></div>
+        <div><label for="fSk">{L['sk']}</label><input type="text" inputmode="decimal" id="fSk" value="2.5" oninput="calcFloor()"></div>
+    </div>
+    <button onclick="calcFloor()">{L['btn']}</button>
+    <div class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label">{L['r_area']}</div><div class="val" id="fRArea">–</div></div>
+        <div class="param-item"><div class="label">{L['r_pk']}</div><div class="val" id="fRPk">–</div></div>
+        <div class="param-item"><div class="label">{L['r_under']}</div><div class="val" id="fRUnder">–</div></div>
+        <div class="param-item"><div class="label">{L['r_sk']}</div><div class="val" id="fRSk">–</div></div>
+    </div>
+    <p id="fNote" style="font-size:0.9rem; margin-bottom:0;"></p>
+</div>
+<script>
+function _fn(id) {{ return parseFloat((document.getElementById(id).value || '').replace(',', '.')) || 0; }}
+function _ff(x, d) {{ return (Math.round(x * Math.pow(10, d)) / Math.pow(10, d)).toString().replace('.', {"','" if lang == "pl" else "'.'"}); }}
+function calcFloor() {{
+    const l = _fn('fL'), w = _fn('fW'), pk = _fn('fPk'), doors = _fn('fD'), sk = _fn('fSk') || 2.5;
+    const waste = parseFloat(document.getElementById('fLay').value) || 5;
+    if (!l || !w) return;
+    const area = l * w, areaW = area * (1 + waste / 100);
+    const packs = pk > 0 ? Math.ceil(areaW / pk) : 0;
+    const under = Math.ceil(area * 1.05);
+    const perim = Math.max(0, 2 * (l + w) - doors * 0.9);
+    const skN = Math.ceil(perim / sk) + 1;
+    document.getElementById('fRArea').textContent = _ff(area, 2) + ' m²';
+    document.getElementById('fRPk').textContent = packs ? (packs + ' {L['pk2']}') : '–';
+    document.getElementById('fRUnder').textContent = under + ' m²';
+    document.getElementById('fRSk').textContent = skN + ' × ' + _ff(sk, 2) + ' m';
+    document.getElementById('fNote').textContent = '{L['p_note']} ' + waste + '% (' + _ff(areaW, 2) + ' m²). {L['gap']}';
+}}
+calcFloor();
+</script>
+"""
+
+TILES_TIPS = {
+    "pl": """
+<h2>Jak liczy kalkulator</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Zapas płytek:</strong> przy układaniu prosto 10% (do 10 m²), 5% (10–50 m²) lub 3% (powyżej 50 m²); po skosie (karo) 15/10/7%; jodełka 15%. Przy dużych formatach (60×120 cm i większych) lepiej rozplanować układ i policzyć płytki co do sztuki.</li>
+        <li><strong>Fuga:</strong> wzór producentów (A+B)/(A·B) × grubość płytki × szerokość spoiny × 1,6 kg/dm³, plus 10% na straty. Zawsze porównaj z tabelą na opakowaniu swojej fugi.</li>
+        <li><strong>Klej:</strong> orientacyjne zużycie wg kart technicznych klejów cienkowarstwowych przy równym podłożu – na nierównym będzie więcej. Przy dużych płytkach stosuje się podwójne smarowanie (klej na podłożu i na płytce).</li>
+        <li><strong>Zostaw kilka płytek</strong> z tej samej partii na przyszłe naprawy – kolejna dostawa może mieć inny odcień.</li>
+    </ul>
+</div>""",
+    "en": """
+<h2>How the calculator works</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Tile allowance:</strong> straight layout 10% (up to 10 m²), 5% (10–50 m²) or 3% (over 50 m²); diagonal 15/10/7%; herringbone 15%. For large formats (60×120 cm and up) it's better to plan the layout and count tiles one by one.</li>
+        <li><strong>Grout:</strong> the manufacturers' formula (A+B)/(A·B) × tile thickness × joint width × 1.6 kg/dm³, plus 10% for waste. Always compare with the chart on your grout packaging.</li>
+        <li><strong>Adhesive:</strong> approximate consumption from thin-bed adhesive data sheets on a flat substrate – an uneven floor needs more. Large tiles are usually back-buttered (adhesive on the floor and on the tile).</li>
+        <li><strong>Keep a few spare tiles</strong> from the same batch for future repairs – a later delivery may differ in shade.</li>
+    </ul>
+</div>""",
+}
+FLOOR_TIPS = {
+    "pl": """
+<h2>Jak liczy kalkulator</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Zapas paneli:</strong> 5% przy układaniu prosto, 10% po skosie, 15% w jodełkę (przy nieregularnych pokojach jeszcze więcej).</li>
+        <li><strong>Podkład:</strong> powierzchnia podłogi + 5% na zakłady. Nie kupuj go, jeśli panele mają podkład zintegrowany.</li>
+        <li><strong>Listwy:</strong> obwód pokoju minus ok. 0,9 m na każde drzwi, plus jedna listwa zapasu na docinki w narożnikach.</li>
+        <li><strong>Szczelina dylatacyjna</strong> 8–15 mm przy ścianach, rurach i progach – podłoga pływająca musi mieć miejsce na pracę.</li>
+        <li><strong>Pokój w kształcie litery L:</strong> policz go jako dwa prostokąty i dodaj wyniki.</li>
+    </ul>
+</div>""",
+    "en": """
+<h2>How the calculator works</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Flooring allowance:</strong> 5% for a straight layout, 10% diagonal, 15% herringbone (more for irregular rooms).</li>
+        <li><strong>Underlay:</strong> floor area + 5% for overlaps. Skip it if your flooring has a built-in underlay.</li>
+        <li><strong>Skirting:</strong> room perimeter minus about 0.9 m per door, plus one spare board for corner cuts.</li>
+        <li><strong>Expansion gap</strong> of 8–15 mm at walls, pipes and thresholds – a floating floor needs room to move.</li>
+        <li><strong>L-shaped room:</strong> calculate it as two rectangles and add the results.</li>
+    </ul>
+</div>""",
+}
+
+tiles_rel = "warsztat/kalkulator-plytek-fugi-kleju.html"
+floor_rel = "warsztat/kalkulator-paneli-podlogowych.html"
+for _rel in (tiles_rel, floor_rel):
+    all_urls.append(f"{DOMAIN}/{_rel}")
+warsztat_cards.append(f'<a href="/{tiles_rel}" class="card" data-sub="przeliczniki"><span class="badge">🧱 Remont i Budowa</span><h3>Kalkulator płytek: ile płytek, fugi i kleju?</h3><p class="card-val">Paczki z zapasem  |  fuga i klej w kg</p></a>')
+warsztat_cards.append(f'<a href="/{floor_rel}" class="card" data-sub="przeliczniki"><span class="badge">🪵 Remont i Budowa</span><h3>Kalkulator paneli podłogowych: paczki, podkład, listwy</h3><p class="card-val">Zapas 5–15%  |  listwy przypodłogowe</p></a>')
+save_file(tiles_rel, wrap_html("Kalkulator płytek: ile płytek, fugi i kleju kupić?", "Oblicz, ile płytek, paczek, fugi i kleju potrzebujesz na podłogę lub ścianę – z zapasem na docinki zależnym od sposobu układania.", f"""
+<div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » Kalkulator płytek</div>
+<h1>Kalkulator płytek – ile płytek, fugi i kleju kupić?</h1>
+<p>Podaj powierzchnię i wymiary płytki, a kalkulator policzy płytki z zapasem na docinki, liczbę paczek oraz orientacyjną ilość fugi i kleju.</p>
+{tiles_widget("pl")}
+{TILES_TIPS["pl"]}
+<p style="margin-top:1.5rem;"><a href="/{floor_rel}" class="btn btn-secondary">🪵 Kalkulator paneli podłogowych</a> <a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
+""", tiles_rel))
+save_file(floor_rel, wrap_html("Kalkulator paneli podłogowych: ile paczek, podkładu i listew?", "Oblicz, ile paczek paneli, podkładu i listew przypodłogowych kupić do pokoju – z zapasem dla układania prosto, po skosie i w jodełkę.", f"""
+<div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » Kalkulator paneli</div>
+<h1>Kalkulator paneli podłogowych – paczki, podkład i listwy</h1>
+<p>Podaj wymiary pokoju i ile metrów kwadratowych jest w paczce paneli – kalkulator policzy paczki z zapasem, podkład i listwy przypodłogowe.</p>
+{floor_widget("pl")}
+{FLOOR_TIPS["pl"]}
+<p style="margin-top:1.5rem;"><a href="/{tiles_rel}" class="btn btn-secondary">🧱 Kalkulator płytek</a> <a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
+""", floor_rel))
+
 SUB_LABELS_W = {
     "gwinty": "🔩 Gwinty",
     "stal": "🔥 Obróbka cieplna",
@@ -2153,7 +2363,7 @@ WARSZTAT_INDEX = f"""
     <button class="filter-btn" onclick="setSub('stal', this)">🔥 Stal i Hartowanie ({SUBW['stal']})</button>
     <button class="filter-btn" onclick="setSub('druk3d', this)">🖨️ Druk 3D ({SUBW['druk3d']})</button>
     <button class="filter-btn" onclick="setSub('elektryka', this)">⚡ Elektryka ({SUBW['elektryka']})</button>
-    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki ({SUBW['przeliczniki'] + 2})</button>
+    <button class="filter-btn" onclick="setSub('przeliczniki', this)">📐 Budowa i Przeliczniki ({SUBW['przeliczniki'] + 4})</button>
 </div>
 <label for="q">Szukaj w warsztacie:</label>
 <input type="text" id="q" placeholder="🔍 Wpisz np. farba, beton, m8, 440c, nmv, petg, wallbox..." oninput="filterCards()">
@@ -2481,6 +2691,30 @@ for _pl_rel, (en_rel, c_title, c_desc, c_h1, c_crumb) in CALC_EN.items():
 """
     save_file(en_rel, wrap_html(c_title, c_desc, calc_body, en_rel, lang="en"))
 
+
+tiles_rel_en = "en/workshop/tile-grout-adhesive-calculator.html"
+floor_rel_en = "en/workshop/laminate-flooring-calculator.html"
+for _rel in (tiles_rel_en, floor_rel_en):
+    all_urls.append(f"{DOMAIN}/{_rel}")
+workshop_cards_en.append(f'<a href="/{tiles_rel_en}" class="card" data-sub="przeliczniki"><span class="badge">🧱 Renovation &amp; Building</span><h3>Tile Calculator: tiles, grout and adhesive</h3><p class="card-val">Boxes with allowance  |  grout and adhesive in kg</p></a>')
+workshop_cards_en.append(f'<a href="/{floor_rel_en}" class="card" data-sub="przeliczniki"><span class="badge">🪵 Renovation &amp; Building</span><h3>Flooring Calculator: packs, underlay and skirting</h3><p class="card-val">Allowance 5–15%  |  skirting boards</p></a>')
+save_file(tiles_rel_en, wrap_html("Tile Calculator: How Many Tiles, How Much Grout and Adhesive?", "Work out how many tiles, boxes, grout and tile adhesive you need for a floor or wall, with a cutting allowance based on the layout.", f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » Tile Calculator</div>
+<h1>Tile Calculator – How Many Tiles, How Much Grout and Adhesive?</h1>
+<p>Enter the area and tile size – the calculator works out tiles with a cutting allowance, the number of boxes, and approximate grout and adhesive. Metric units (1 m² ≈ 10.76 sq ft).</p>
+{tiles_widget("en")}
+{TILES_TIPS["en"]}
+<p style="margin-top:1.5rem;"><a href="/{floor_rel_en}" class="btn btn-secondary">🪵 Flooring calculator</a> <a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
+""", tiles_rel_en, lang="en"))
+save_file(floor_rel_en, wrap_html("Laminate and Vinyl Flooring Calculator: Packs, Underlay and Skirting", "Work out how many packs of laminate or vinyl flooring, underlay and skirting boards you need, with an allowance for straight, diagonal and herringbone layouts.", f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » Flooring Calculator</div>
+<h1>Laminate &amp; Vinyl Flooring Calculator – Packs, Underlay and Skirting</h1>
+<p>Enter the room size and the m² per pack – the calculator works out packs with an allowance, underlay and skirting boards. Metric units (1 m ≈ 3.28 ft).</p>
+{floor_widget("en")}
+{FLOOR_TIPS["en"]}
+<p style="margin-top:1.5rem;"><a href="/{tiles_rel_en}" class="btn btn-secondary">🧱 Tile calculator</a> <a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
+""", floor_rel_en, lang="en"))
+
 SUB_LABELS_W_EN = {
     "gwinty": "🔩 Threads",
     "stal": "🔥 Heat treatment",
@@ -2623,7 +2857,7 @@ SUBR_EN = Counter(x[5] for x in ROWER_ITEMS if x[0] in CYCLING_EN)
 
 workshop_filters_en = [f"""<button class="filter-btn active" onclick="setSub('all', this)">All ({N_WARS_EN})</button>"""]
 for _sub, _label in SUB_LABELS_W_EN.items():
-    _n = SUBW_EN.get(_sub, 0) + (len(CALC_EN) if _sub == "przeliczniki" else 0)
+    _n = SUBW_EN.get(_sub, 0) + (len(CALC_EN) + 2 if _sub == "przeliczniki" else 0)
     if _n:
         workshop_filters_en.append(f"""<button class="filter-btn" onclick="setSub('{_sub}', this)">{_label} ({_n})</button>""")
 
