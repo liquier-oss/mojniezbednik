@@ -517,13 +517,15 @@ footer {
 }
 """
 save_file("style.css", STYLE_CSS)
+# Wersja arkusza w adresie: każda zmiana stylów wymusza pobranie nowego pliku (omija pamięć podręczną)
+STYLE_VER = hashlib.sha256(STYLE_CSS.encode("utf-8")).hexdigest()[:10]
 
 # Ikony SVG (proste, własne); dziedziczą kolor tekstu (currentColor)
 def _svg(inner, sw=2):
-    return (f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{sw}" '
+    return (f'<svg class="ico" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{sw}" '
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{inner}</svg>')
 ICON = {
-    "bolt": '<svg class="ico" viewBox="0 0 64 64" aria-hidden="true"><path d="M38 6 16 36h14l-4 22 22-30H34z" fill="currentColor"/></svg>',
+    "bolt": '<svg class="ico" width="1em" height="1em" viewBox="0 0 64 64" aria-hidden="true"><path d="M38 6 16 36h14l-4 22 22-30H34z" fill="currentColor"/></svg>',
     "kitchen": _svg('<path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M2 10h2M20 10h2"/><path d="M9 6c0-1 1-1 1-2M14 6c0-1 1-1 1-2"/>'),
     "workshop": _svg('<path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3z"/><path d="M14.7 6.3 17 4l3 3-2.3 2.3"/>'),
     "bike": _svg('<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9 9h6l3.5 7.5M9 9l3 7.5h-6.5M15 9l-1.5-3H11"/>'),
@@ -663,7 +665,7 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
     <title>{title} | {title_suffix}</title>
     <meta name="description" content="{d_attr}">
     {head_index}{hreflang}
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/style.css?v={STYLE_VER}">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
