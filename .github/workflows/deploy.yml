@@ -1,0 +1,64 @@
+# Automatyczne wdrożenie mojniezbednik.pl
+# Po każdej zmianie w gałęzi main: serwer pobiera zmiany, uruchamia update_hub.py,
+# a potem czyszczony jest cache Cloudflare.
+#
+# Wymagane sekrety (GitHub -> Settings -> Secrets and variables -> Actions):
+#   VPS_HOST         - prawdziwy adres IP VPS (nie domena, bo ta wskazuje na Cloudflare)
+#   VPS_KNOWN_HOSTS  - wynik: ssh-keyscan -t ed25519 <IP_VPS>
+#   DEPLOY_SSH_KEY   - klucz prywatny użytkownika "deploy" (cały plik, z liniami BEGIN/END)
+#   CF_ZONE_ID       - Zone ID domeny z panelu Cloudflare (Overview, prawa kolumna)
+#   CF_API_TOKEN     - token Cloudflare z jednym uprawnieniem: Zone -> Cache Purge -> Purge
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["ops/**", "*.md", ".github/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Kontrola składni generatora
+        run: python -m py_compile update_hub.py
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Klucz SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Wdrożenie na VPS (git pull + update_hub.py)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: ssh "deploy@${VPS_HOST}"
+
+      - name: Czyszczenie cache Cloudflare
+        env:
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
