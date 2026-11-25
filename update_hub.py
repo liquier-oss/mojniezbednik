@@ -1097,6 +1097,47 @@ LISTY_ITEMS = [
             "Naładowana gaśnica domowa i apteczka pierwszej pomocy"
         ])
     ]),
+    ("torba-do-porodu", "Torba do porodu – co spakować do szpitala (lista do druku)", "🏥 Dom i Bezpieczeństwo", "Checklista torby do porodu: dokumenty, rzeczy dla mamy na poród i po porodzie, dla noworodka i dla osoby towarzyszącej. Najpierw sprawdź listę swojego szpitala – wiele placówek zapewnia pieluszki lub ubranka.", [
+        ("📄 Dokumenty (najlepiej w jednej teczce)", [
+            "Dowód osobisty",
+            "Karta przebiegu ciąży",
+            "Wyniki badań z ciąży: grupa krwi i Rh, przeciwciała, GBS, HIV, WZW B i C, kiła (VDRL), ostatnia morfologia i badanie moczu, opisy USG",
+            "Skierowanie do szpitala (jeśli lekarz je wystawił) i plan porodu (jeśli go masz)",
+            "Lista przyjmowanych leków i informacja o alergiach",
+        ]),
+        ("🤰 Dla mamy – na poród", [
+            "Luźna koszula do porodu (najlepiej rozpinana z przodu) lub duży T-shirt",
+            "Szlafrok i ciepłe skarpetki",
+            "Klapki pod prysznic (antypoślizgowe)",
+            "Woda niegazowana w butelce z dzióbkiem lub ze słomką",
+            "Lekkie przekąski (sprawdź zasady szpitala dotyczące jedzenia w trakcie porodu)",
+            "Gumka lub spinka do włosów, pomadka do ust",
+            "Telefon i ładowarka z długim kablem (2–3 m) lub powerbank",
+        ]),
+        ("🛏️ Dla mamy – po porodzie", [
+            "2–3 koszule do karmienia (rozpinane)",
+            "Biustonosze do karmienia (2 sztuki) i wkładki laktacyjne",
+            "Podkłady poporodowe i majtki poporodowe (siateczkowe lub jednorazowe)",
+            "2 ręczniki (duży i mały)",
+            "Kosmetyczka: szczoteczka, pasta, delikatny żel do higieny intymnej, dezodorant",
+            "Maść na brodawki (np. z lanoliną)",
+            "Luźne, wygodne ubranie na wyjście ze szpitala",
+        ]),
+        ("👶 Dla noworodka", [
+            "Pieluszki dla noworodka (rozmiar 1) – jeśli szpital ich nie zapewnia",
+            "Chusteczki nawilżane dla niemowląt lub waciki i woda",
+            "3–4 body lub pajacyki (rozmiar 56–62)",
+            "Czapeczka i skarpetki",
+            "Ubranko na wyjście dopasowane do pogody + kocyk lub rożek",
+            "Fotelik samochodowy – zamontowany w aucie przed porodem!",
+        ]),
+        ("🧑 Dla osoby towarzyszącej", [
+            "Dokument tożsamości i wygodne ubranie na zmianę",
+            "Kapcie lub obuwie na zmianę (jeśli szpital wymaga)",
+            "Przekąski, woda, ładowarka do telefonu",
+            "Drobne lub karta na parking i automaty",
+        ]),
+    ]),
     ("dom-przed-wyjazdem-na-urlop", "Zabezpieczenie mieszkania przed wyjazdem na urlop – Checklista", "🏠 Dom i Bezpieczeństwo", "Szybka lista kontrolna przed zamknięciem drzwi na wakacje lub dłuższy weekend.", [
         ("🚰 Woda, Gaz i Elektryka", [
             "Zakręcony główny zawór wody (oraz zawór dopływu do pralki i zmywarki)",
@@ -1240,7 +1281,7 @@ calcMortar();
 """
 
 # Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
-N_KUCH = len(KUCHNIA_ITEMS) + 1           # + przelicznik piekarnik -> Airfryer
+N_KUCH = len(KUCHNIA_ITEMS) + 2           # + przelicznik piekarnik -> Airfryer i miar kuchennych
 N_WARS = len(WARSZTAT_ITEMS) + 2          # + kalkulator farby i zaprawy
 N_ROW = len(ROWER_ITEMS)
 N_LIST = len(LISTY_ITEMS)
@@ -1264,7 +1305,7 @@ N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN)
 N_ROW_EN = len(CYCLING_EN)
 assert set(KITCHEN_EN) <= {x[0] for x in KUCHNIA_ITEMS}, "content_en: nieznany slug kuchni"
 assert set(LISTS_EN) <= {x[0] for x in LISTY_ITEMS}, "content_en: nieznany slug listy"
-N_KUCH_EN = len(KITCHEN_EN) + 1
+N_KUCH_EN = len(KITCHEN_EN) + 2
 N_LIST_EN = len(LISTS_EN)
 
 def _pair(pl_rel, en_rel):
@@ -1276,6 +1317,7 @@ _pair("warsztat/", "en/workshop/")
 _pair("rower/", "en/cycling/")
 _pair("kuchnia/", "en/kitchen/")
 _pair("kuchnia/przelicznik-piekarnik-airfryer.html", "en/kitchen/oven-to-air-fryer-converter.html")
+_pair("kuchnia/przelicznik-miar-kuchennych.html", "en/kitchen/cups-to-grams-converter.html")
 _pair("listy/", "en/checklists/")
 for _slug, _v in KITCHEN_EN.items():
     _pair(f"kuchnia/{_slug}.html", f"en/kitchen/{_v[0]}.html")
@@ -1565,6 +1607,111 @@ OVEN_BODY_PL = f"""
 <p style="margin-top:1.5rem;"><a href="/kuchnia/" class="btn">← Wróć do pełnej tabeli Airfryer</a></p>
 """
 save_file(oven_rel, wrap_html("Przelicznik piekarnik → Airfryer: temperatura i czas", "Przelicz temperaturę i czas z przepisu na piekarnik na Airfryer: świeże potrawy, wypieki i mrożonki. Zasady, tabela i kalkulator.", OVEN_BODY_PL, oven_rel))
+
+
+# 6c. Przelicznik miar kuchennych (szklanki/łyżki -> gramy), PL i EN
+# Gęstości nasypowe [g/ml] – wartości przybliżone (zależą od sposobu nabierania, ±10%)
+MEASURE_ITEMS = [
+    # (id, nazwa PL, nazwa EN, gęstość g/ml)
+    ("flour", "Mąka pszenna", "Plain / all-purpose flour (scooped)", 0.60),
+    ("starch", "Mąka ziemniaczana", "Potato starch", 0.65),
+    ("sugar", "Cukier biały", "White granulated sugar", 0.85),
+    ("icing", "Cukier puder", "Icing / powdered sugar", 0.56),
+    ("cocoa", "Kakao", "Cocoa powder", 0.40),
+    ("oats", "Płatki owsiane", "Rolled oats", 0.41),
+    ("rice", "Ryż (suchy)", "Rice (uncooked)", 0.85),
+    ("semolina", "Kasza manna", "Semolina", 0.70),
+    ("salt", "Sól", "Salt", 1.20),
+    ("bp", "Proszek do pieczenia", "Baking powder", 0.80),
+    ("butter", "Masło", "Butter", 0.91),
+    ("oil", "Olej / oliwa", "Oil", 0.92),
+    ("honey", "Miód", "Honey", 1.42),
+    ("milk", "Mleko", "Milk", 1.03),
+    ("water", "Woda", "Water", 1.00),
+]
+
+def measure_widget(lang):
+    import json as _json
+    dens = {i[0]: i[3] for i in MEASURE_ITEMS}
+    if lang == "en":
+        names = {i[0]: i[2] for i in MEASURE_ITEMS}
+        units = [("uscup", "US cup (240 ml)", 240), ("cup", "Metric cup (250 ml)", 250), ("tbsp", "Tablespoon (15 ml)", 15), ("tsp", "Teaspoon (5 ml)", 5), ("ml", "Millilitres (ml)", 1)]
+        L = dict(h2="⚖️ Cups and Spoons to Grams Converter", amount="Amount:", unit="Measure:", prod="Ingredient:", res="Weight", hint="Tip: 1/2 = 0.5, 1/3 = 0.33, 1/4 = 0.25.")
+    else:
+        names = {i[0]: i[1] for i in MEASURE_ITEMS}
+        units = [("cup", "Szklanka (250 ml)", 250), ("tbsp", "Łyżka (15 ml)", 15), ("tsp", "Łyżeczka (5 ml)", 5), ("ml", "Mililitry (ml)", 1)]
+        L = dict(h2="⚖️ Przelicznik: szklanki i łyżki na gramy", amount="Ilość:", unit="Miara:", prod="Produkt:", res="Waga", hint="Podpowiedź: pół szklanki = 0.5, ćwierć = 0.25.")
+    opts_u = "".join(f'<option value="{ml}">{lbl}</option>' for _, lbl, ml in units)
+    opts_p = "".join(f'<option value="{i[0]}">{names[i[0]]}</option>' for i in MEASURE_ITEMS)
+    oz = "true" if lang == "en" else "false"
+    dec = "'.'" if lang == "en" else "','"
+    return f"""
+<div class="timer-box" style="text-align:left;" id="measureBox">
+    <h2 style="margin-top:0;">{L['h2']}</h2>
+    <div class="form-row">
+        <div>
+            <label for="msAmount">{L['amount']}</label>
+            <input type="text" inputmode="decimal" id="msAmount" value="1" oninput="calcMeasure()">
+        </div>
+        <div>
+            <label for="msUnit">{L['unit']}</label>
+            <select id="msUnit" onchange="calcMeasure()">{opts_u}</select>
+        </div>
+    </div>
+    <label for="msProd">{L['prod']}</label>
+    <select id="msProd" onchange="calcMeasure()">{opts_p}</select>
+    <div class="param-box" style="margin-top:0.5rem;" aria-live="polite">
+        <div class="param-item"><div class="label">{L['res']}</div><div class="val" id="msRes">150 g</div></div>
+    </div>
+    <p style="font-size:0.82rem; margin-bottom:0;">{L['hint']}</p>
+</div>
+<script>
+const MS_DENS = {_json.dumps(dens)};
+function calcMeasure() {{
+    const raw = (document.getElementById('msAmount').value || '').replace(',', '.');
+    const amount = parseFloat(raw) || 0;
+    const ml = parseFloat(document.getElementById('msUnit').value) || 0;
+    const d = MS_DENS[document.getElementById('msProd').value] || 1;
+    const g = amount * ml * d;
+    let txt = String(g >= 100 ? Math.round(g) : Math.round(g * 10) / 10).replace('.', {dec}) + ' g';
+    if ({oz}) txt += ' (' + (g / 28.35).toFixed(1) + ' oz)';
+    document.getElementById('msRes').textContent = txt;
+}}
+calcMeasure();
+</script>
+"""
+
+def measure_table(lang):
+    if lang == "en":
+        head = "<tr><th>Ingredient</th><th>US cup 240 ml</th><th>Tbsp 15 ml</th><th>Tsp 5 ml</th></tr>"
+        rows = "".join(f"<tr><td>{i[2]}</td><td>{round(240 * i[3])} g</td><td>{round(15 * i[3])} g</td><td>{round(5 * i[3], 1):g} g</td></tr>" for i in MEASURE_ITEMS)
+    else:
+        head = "<tr><th>Produkt</th><th>Szklanka 250 ml</th><th>Łyżka 15 ml</th><th>Łyżeczka 5 ml</th></tr>"
+        rows = "".join(f"<tr><td>{i[1]}</td><td>{round(250 * i[3])} g</td><td>{round(15 * i[3])} g</td><td>{str(round(5 * i[3], 1)).rstrip('0').rstrip('.').replace('.', ',')} g</td></tr>" for i in MEASURE_ITEMS)
+    return f'<div class="table-wrap"><table class="rel-table measure-table"><thead>{head}</thead><tbody>{rows}</tbody></table></div>'
+
+measure_rel = "kuchnia/przelicznik-miar-kuchennych.html"
+all_urls.append(f"{DOMAIN}/{measure_rel}")
+kuchnia_cards.insert(1, f'<a href="/{measure_rel}" class="card" data-sub="airfryer"><span class="badge">⚖️ Przelicznik</span><h3>Przelicznik miar kuchennych: szklanki i łyżki na gramy</h3><p class="card-val">Szklanka mąki ≈ 150 g  |  cukru ≈ 212 g</p></a>')
+MEASURE_BODY_PL = f"""
+<div class="breadcrumbs"><a href="/">Start</a> » <a href="/kuchnia/">Kuchnia</a> » Przelicznik miar kuchennych</div>
+<h1>Przelicznik miar kuchennych – ile gramów w szklance i łyżce?</h1>
+<p>Szklanka w polskich przepisach to 250 ml, łyżka 15 ml, a łyżeczka 5 ml. Ile to gramów, zależy od produktu: szklanka mąki waży dużo mniej niż szklanka cukru czy miodu.</p>
+{measure_widget("pl")}
+<h2>Tabela: szklanka, łyżka, łyżeczka w gramach</h2>
+{measure_table("pl")}
+<h2>Na co uważać</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>To wartości przybliżone (±10%):</strong> mąka nabierana prosto z worka i ubijana waży więcej niż przesiana i nasypywana łyżką. Przy wypiekach najdokładniej jest ważyć.</li>
+        <li><strong>Miary równe, bez czubka:</strong> tabela zakłada szklankę i łyżkę wypełnione do pełna i wyrównane nożem. Łyżka „z czubkiem” to nawet o 30–50% więcej.</li>
+        <li><strong>Szklanka w starych przepisach:</strong> niektóre źródła przyjmują 200 lub 225 ml – jeśli przepis wychodzi „za suchy” albo „za rzadki”, to częsta przyczyna.</li>
+        <li><strong>Przepisy amerykańskie:</strong> „cup” to ok. 240 ml, czyli trochę mniej niż polska szklanka.</li>
+    </ul>
+</div>
+<p style="margin-top:1.5rem;"><a href="/kuchnia/" class="btn">← Wróć do działu Kuchnia</a></p>
+"""
+save_file(measure_rel, wrap_html("Przelicznik miar kuchennych: ile gramów w szklance i łyżce", "Ile gramów ma szklanka mąki, cukru, ryżu czy mleka? Przelicznik szklanek, łyżek i łyżeczek na gramy z tabelą dla popularnych produktów.", MEASURE_BODY_PL, measure_rel))
 
 # 7. Generowanie podstron Warsztat + 2 nowe dedykowane podstrony kalkulatorów (Farba i Zaprawa/Beton)
 warsztat_cards = []
@@ -2778,6 +2925,29 @@ OVEN_BODY_EN = f"""
 <p style="margin-top:1.5rem;"><a href="/en/kitchen/" class="btn">← Back to the full air fryer table</a></p>
 """
 save_file(oven_rel_en, wrap_html("Oven to Air Fryer Converter: Temperature and Time", "Convert oven temperature and time to the air fryer: fresh food, baking and frozen food. Rules, table and calculator in °C and °F.", OVEN_BODY_EN, oven_rel_en, lang="en"))
+
+
+measure_rel_en = "en/kitchen/cups-to-grams-converter.html"
+all_urls.append(f"{DOMAIN}/{measure_rel_en}")
+kitchen_cards_en.insert(1, f'<a href="/{measure_rel_en}" class="card" data-sub="airfryer"><span class="badge">⚖️ Converter</span><h3>Cups and Spoons to Grams Converter</h3><p class="card-val">US cup of flour ≈ 144 g  |  sugar ≈ 204 g</p></a>')
+MEASURE_BODY_EN = f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/kitchen/">Kitchen</a> » Cups to Grams Converter</div>
+<h1>Cups to Grams Converter – Flour, Sugar, Butter and More</h1>
+<p>A US cup is about 240 ml, a metric cup (UK, Australia, Canada) 250 ml, a tablespoon 15 ml and a teaspoon 5 ml. How many grams that is depends on the ingredient: a cup of flour weighs much less than a cup of sugar or honey.</p>
+{measure_widget("en")}
+<h2>Chart: cup, tablespoon and teaspoon in grams</h2>
+{measure_table("en")}
+<h2>Things to watch</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>Values are approximate (±10%):</strong> flour scooped straight from the bag weighs more than flour spooned into the cup and levelled – many US bakeries use about 120 g per cup for spooned flour. For baking, a scale is the most accurate.</li>
+        <li><strong>Level measures:</strong> the chart assumes cups and spoons filled and levelled with a knife. A heaped spoon can be 30–50% more.</li>
+        <li><strong>Polish and European recipes:</strong> a "glass" (szklanka) is usually 250 ml – a little more than a US cup.</li>
+    </ul>
+</div>
+<p style="margin-top:1.5rem;"><a href="/en/kitchen/" class="btn">← Back to Kitchen</a></p>
+"""
+save_file(measure_rel_en, wrap_html("Cups to Grams Converter: Flour, Sugar, Butter and More", "How many grams in a cup of flour, sugar, rice or butter? Convert US and metric cups, tablespoons and teaspoons to grams, with a chart for common ingredients.", MEASURE_BODY_EN, measure_rel_en, lang="en"))
 
 # 11d. Checklists (EN) – kopia sekcji 9 z angielskimi tekstami
 lists_cards_en = []
