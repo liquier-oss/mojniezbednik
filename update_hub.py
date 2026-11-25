@@ -1240,7 +1240,7 @@ calcMortar();
 """
 
 # Liczniki liczone automatycznie z danych (nie wpisuj liczb ręcznie)
-N_KUCH = len(KUCHNIA_ITEMS)
+N_KUCH = len(KUCHNIA_ITEMS) + 1           # + przelicznik piekarnik -> Airfryer
 N_WARS = len(WARSZTAT_ITEMS) + 2          # + kalkulator farby i zaprawy
 N_ROW = len(ROWER_ITEMS)
 N_LIST = len(LISTY_ITEMS)
@@ -1264,7 +1264,7 @@ N_WARS_EN = len(WORKSHOP_EN) + len(CALC_EN)
 N_ROW_EN = len(CYCLING_EN)
 assert set(KITCHEN_EN) <= {x[0] for x in KUCHNIA_ITEMS}, "content_en: nieznany slug kuchni"
 assert set(LISTS_EN) <= {x[0] for x in LISTY_ITEMS}, "content_en: nieznany slug listy"
-N_KUCH_EN = len(KITCHEN_EN)
+N_KUCH_EN = len(KITCHEN_EN) + 1
 N_LIST_EN = len(LISTS_EN)
 
 def _pair(pl_rel, en_rel):
@@ -1275,6 +1275,7 @@ _pair("", "en/")
 _pair("warsztat/", "en/workshop/")
 _pair("rower/", "en/cycling/")
 _pair("kuchnia/", "en/kitchen/")
+_pair("kuchnia/przelicznik-piekarnik-airfryer.html", "en/kitchen/oven-to-air-fryer-converter.html")
 _pair("listy/", "en/checklists/")
 for _slug, _v in KITCHEN_EN.items():
     _pair(f"kuchnia/{_slug}.html", f"en/kitchen/{_v[0]}.html")
@@ -1442,6 +1443,128 @@ for slug, title, temp, mins, tip in KUCHNIA_ITEMS:
     </script>
     """
     save_file(rel_url, wrap_html(title, f"{title}: orientacyjna temperatura ({temp}°C), czas (~{mins} min), warunki bezpieczeństwa i minutnik online.", body, rel_url))
+
+
+# 6b. Przelicznik piekarnik -> Airfryer (PL i EN, wspólny skrypt)
+# Reguła wyjściowa: świeże potrawy -20°C (-25°F) i czas -20–25%; wypieki -25°C (-50°F) i -20%;
+# gotowe mrożonki w tej samej temperaturze i ok. -35–50% czasu. Górny limit 200°C (400°F).
+def oven_widget(lang):
+    if lang == "en":
+        L = dict(h2="🔁 Oven to Air Fryer Converter", desc="Enter the temperature and time from an oven recipe or a packet – you'll get a starting point for the air fryer.",
+                 unit="Unit:", temp="Oven temperature:", time="Oven time (minutes):", kind="Type of food:",
+                 k1="Fresh food: meat, vegetables, potatoes, bakes", k2="Baking: cakes, muffins, cookies", k3="Ready-made frozen food (fries, nuggets, fish fingers)",
+                 btn="Convert", r1="Air fryer temperature", r2="Air fryer time", note="Check at", noteb="min, shake or turn halfway through.", noteb_bake="min with a skewer; don\u2019t open the drawer in the first half.",
+                 cap="Most air fryers max out at 200°C (400°F) – the result has been capped.", thermo="For meat and poultry, always check the internal temperature with a thermometer.",
+                 deg_c="°C", deg_f="°F")
+    else:
+        L = dict(h2="🔁 Przelicznik: piekarnik → Airfryer", desc="Wpisz temperaturę i czas z przepisu albo opakowania (piekarnik) – dostaniesz punkt wyjścia dla Airfryera.",
+                 unit="Jednostka:", temp="Temperatura w piekarniku:", time="Czas w piekarniku (minuty):", kind="Rodzaj potrawy:",
+                 k1="Świeże: mięso, warzywa, ziemniaki, zapiekanki", k2="Wypieki: ciasta, muffiny, ciasteczka", k3="Gotowe mrożonki (frytki, nuggetsy, paluszki rybne)",
+                 btn="Przelicz", r1="Temperatura w Airfryerze", r2="Czas w Airfryerze", note="Sprawdź po", noteb="min; w połowie przemieszaj lub obróć.", noteb_bake="min patyczkiem; nie otwieraj szuflady w pierwszej połowie pieczenia.",
+                 cap="Większość Airfryerów ma maksymalnie 200°C – wynik ograniczono do tej wartości.", thermo="Przy mięsie i drobiu zawsze sprawdź temperaturę w środku termometrem.",
+                 deg_c="°C", deg_f="°F")
+    unit_row = ""
+    if lang == "en":
+        unit_row = f"""
+        <div>
+            <label for="ovUnit">{L['unit']}</label>
+            <select id="ovUnit" onchange="ovUnitChange()">
+                <option value="C">{L['deg_c']}</option>
+                <option value="F">{L['deg_f']}</option>
+            </select>
+        </div>"""
+    return f"""
+<div class="timer-box" style="text-align:left;" id="ovenCalcBox">
+    <h2 style="margin-top:0;">{L['h2']}</h2>
+    <p style="font-size:0.9rem;">{L['desc']}</p>
+    <div class="form-row">{unit_row}
+        <div>
+            <label for="ovTemp">{L['temp']}</label>
+            <input type="number" id="ovTemp" value="200" min="50" max="300" step="5" oninput="calcOven()">
+        </div>
+        <div>
+            <label for="ovTime">{L['time']}</label>
+            <input type="number" id="ovTime" value="30" min="1" max="300" step="1" oninput="calcOven()">
+        </div>
+    </div>
+    <label for="ovKind">{L['kind']}</label>
+    <select id="ovKind" onchange="calcOven()">
+        <option value="fresh">{L['k1']}</option>
+        <option value="bake">{L['k2']}</option>
+        <option value="frozen">{L['k3']}</option>
+    </select>
+    <button onclick="calcOven()">{L['btn']}</button>
+    <div class="param-box" style="margin-top:1rem;" aria-live="polite">
+        <div class="param-item"><div class="label">{L['r1']}</div><div class="val" id="ovResT">180°C</div></div>
+        <div class="param-item"><div class="label">{L['r2']}</div><div class="val" id="ovResM">~23–24 min</div></div>
+    </div>
+    <p id="ovNote" style="font-size:0.9rem; margin-bottom:0.25rem;"></p>
+    <p id="ovCap" class="alert-box" style="display:none;">{L['cap']}</p>
+    <p style="font-size:0.82rem; margin-bottom:0;">{L['thermo']}</p>
+</div>
+<script>
+function ovUnitChange() {{
+    const u = document.getElementById('ovUnit');
+    const t = document.getElementById('ovTemp');
+    const v = parseFloat(t.value) || 0;
+    t.value = u.value === 'F' ? Math.round((v * 9 / 5 + 32) / 5) * 5 : Math.round(((v - 32) * 5 / 9) / 5) * 5;
+    t.max = u.value === 'F' ? 575 : 300;
+    calcOven();
+}}
+function calcOven() {{
+    const uEl = document.getElementById('ovUnit');
+    const isF = !!(uEl && uEl.value === 'F');
+    const deg = isF ? '°F' : '°C';
+    const temp = parseFloat(document.getElementById('ovTemp').value) || 0;
+    const mins = parseFloat(document.getElementById('ovTime').value) || 0;
+    const kind = document.getElementById('ovKind').value;
+    let drop, fLo, fHi;
+    if (kind === 'bake') {{ drop = isF ? 50 : 25; fLo = 0.75; fHi = 0.8; }}
+    else if (kind === 'frozen') {{ drop = 0; fLo = 0.5; fHi = 0.65; }}
+    else {{ drop = isF ? 25 : 20; fLo = 0.75; fHi = 0.8; }}
+    const maxT = isF ? 400 : 200, minT = isF ? 175 : 80;
+    let t = Math.round((temp - drop) / 5) * 5;
+    const capped = t > maxT;
+    t = Math.min(maxT, Math.max(minT, t));
+    const lo = Math.max(1, Math.round(mins * fLo)), hi = Math.max(1, Math.round(mins * fHi));
+    document.getElementById('ovResT').textContent = t + deg;
+    document.getElementById('ovResM').textContent = lo === hi ? ('~' + lo + ' min') : ('~' + lo + '–' + hi + ' min');
+    document.getElementById('ovNote').textContent = '{L['note']} ' + Math.max(1, lo - 2) + ' ' + (kind === 'bake' ? '{L['noteb_bake']}' : '{L['noteb']}');
+    document.getElementById('ovCap').style.display = capped ? 'block' : 'none';
+}}
+calcOven();
+</script>
+"""
+
+oven_rel = "kuchnia/przelicznik-piekarnik-airfryer.html"
+all_urls.append(f"{DOMAIN}/{oven_rel}")
+kuchnia_cards.insert(0, f'<a href="/{oven_rel}" class="card" data-sub="airfryer"><span class="badge">🔁 Przelicznik</span><h3>Przelicznik: piekarnik → Airfryer (temperatura i czas)</h3><p class="card-val">−20°C  |  ok. −20–25% czasu</p></a>')
+OVEN_BODY_PL = f"""
+<div class="breadcrumbs"><a href="/">Start</a> » <a href="/kuchnia/">Kuchnia</a> » Przelicznik piekarnik → Airfryer</div>
+<h1>Przelicznik z piekarnika na Airfryer – temperatura i czas</h1>
+<p>Masz przepis albo instrukcję na opakowaniu tylko do piekarnika? Airfryer to mały piekarnik z mocnym termoobiegiem: grzeje intensywniej i szybciej, więc zwykle trzeba obniżyć temperaturę i skrócić czas.</p>
+{oven_widget("pl")}
+<h2>Zasady przeliczania</h2>
+<div class="table-wrap"><table class="rel-table">
+<thead><tr><th>Rodzaj potrawy</th><th>Temperatura · czas</th></tr></thead>
+<tbody>
+<tr><td>Świeże: mięso, warzywa, ziemniaki, zapiekanki</td><td>−20°C · −20–25%</td></tr>
+<tr><td>Wypieki: ciasta, muffiny, ciasteczka</td><td>−25°C · −20–25%</td></tr>
+<tr><td>Gotowe mrożonki (frytki, nuggetsy, paluszki)</td><td>ta sama · −35–50%</td></tr>
+</tbody></table></div>
+<h2>Na co uważać</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>To punkt wyjścia:</strong> Airfryery różnią się mocą i wielkością kosza. Przy pierwszym podejściu zajrzyj 2–3 minuty wcześniej.</li>
+        <li><strong>Jedna warstwa:</strong> przeliczenie zakłada luźno ułożone jedzenie. Przy pełnym koszu czas się wydłuża – przemieszaj w połowie.</li>
+        <li><strong>Przepis na termoobieg:</strong> jeśli temperatura w przepisie jest już podana dla termoobiegu, zacznij od mniejszej obniżki (ok. −10°C).</li>
+        <li><strong>Mięso i drób:</strong> gotowość sprawdzaj termometrem – drób min. 74°C, mięso mielone min. 71°C w najgrubszym miejscu.</li>
+        <li><strong>Ciasta:</strong> wysokie formy przypalają się z wierzchu, zanim środek się upiecze – przykryj folią w drugiej połowie pieczenia.</li>
+    </ul>
+</div>
+<p style="margin-top:1.5rem;"><a href="/kuchnia/" class="btn">← Wróć do pełnej tabeli Airfryer</a></p>
+"""
+save_file(oven_rel, wrap_html("Przelicznik piekarnik → Airfryer: temperatura i czas", "Przelicz temperaturę i czas z przepisu na piekarnik na Airfryer: świeże potrawy, wypieki i mrożonki. Zasady, tabela i kalkulator.", OVEN_BODY_PL, oven_rel))
 
 # 7. Generowanie podstron Warsztat + 2 nowe dedykowane podstrony kalkulatorów (Farba i Zaprawa/Beton)
 warsztat_cards = []
@@ -2625,6 +2748,37 @@ for slug, _title_pl, temp, mins, _tip_pl in KUCHNIA_ITEMS:
     save_file(rel_url, wrap_html(title, f"{title}: approximate temperature ({temp}°C / {round(temp * 9 / 5 + 32)}°F), time (~{mins} min), safety tips and an online timer.", body, rel_url, lang="en"))
 
 
+
+oven_rel_en = "en/kitchen/oven-to-air-fryer-converter.html"
+all_urls.append(f"{DOMAIN}/{oven_rel_en}")
+kitchen_cards_en.insert(0, f'<a href="/{oven_rel_en}" class="card" data-sub="airfryer"><span class="badge">🔁 Converter</span><h3>Oven to Air Fryer Converter (temperature and time)</h3><p class="card-val">−20°C / −25°F  |  about −20–25% time</p></a>')
+OVEN_BODY_EN = f"""
+<div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/kitchen/">Kitchen</a> » Oven to Air Fryer Converter</div>
+<h1>Oven to Air Fryer Conversion – Temperature and Time</h1>
+<p>Got a recipe or packet instructions for the oven only? An air fryer is a small, powerful convection oven: it heats more intensely and cooks faster, so you usually lower the temperature and shorten the time.</p>
+{oven_widget("en")}
+<h2>Conversion rules</h2>
+<div class="table-wrap"><table class="rel-table">
+<thead><tr><th>Type of food</th><th>Temperature · time</th></tr></thead>
+<tbody>
+<tr><td>Fresh: meat, vegetables, potatoes, bakes</td><td>−20°C / −25°F · −20–25%</td></tr>
+<tr><td>Baking: cakes, muffins, cookies</td><td>−25°C / −50°F · −20–25%</td></tr>
+<tr><td>Ready-made frozen food (fries, nuggets, fish fingers)</td><td>same · −35–50%</td></tr>
+</tbody></table></div>
+<h2>Things to watch</h2>
+<div class="info-box">
+    <ul>
+        <li><strong>It's a starting point:</strong> air fryers differ in power and basket size. The first time, check 2–3 minutes early.</li>
+        <li><strong>Single layer:</strong> the conversion assumes food spread out loosely. A full basket takes longer – shake halfway through.</li>
+        <li><strong>Fan-oven recipes:</strong> if the recipe temperature is already for a fan oven, start with a smaller drop (about −10°C / −15°F).</li>
+        <li><strong>Meat and poultry:</strong> check doneness with a thermometer – poultry at least 74°C (165°F), minced meat at least 71°C (160°F) in the thickest part.</li>
+        <li><strong>Cakes:</strong> tall tins burn on top before the middle is done – cover with foil for the second half.</li>
+    </ul>
+</div>
+<p style="margin-top:1.5rem;"><a href="/en/kitchen/" class="btn">← Back to the full air fryer table</a></p>
+"""
+save_file(oven_rel_en, wrap_html("Oven to Air Fryer Converter: Temperature and Time", "Convert oven temperature and time to the air fryer: fresh food, baking and frozen food. Rules, table and calculator in °C and °F.", OVEN_BODY_EN, oven_rel_en, lang="en"))
+
 # 11d. Checklists (EN) – kopia sekcji 9 z angielskimi tekstami
 lists_cards_en = []
 for slug, *_pl in LISTY_ITEMS:
@@ -2989,8 +3143,29 @@ SITEMAP_XML = f"""<?xml version="1.0" encoding="UTF-8"?>
 </urlset>"""
 save_file("sitemap.xml", SITEMAP_XML)
 
-ROBOTS_TXT = f"""User-agent: *
+ROBOTS_TXT = f"""# Wyszukiwarki i asystenci AI (cytują stronę i podają link) - mile widziani
+User-agent: *
 Allow: /
+
+# Boty zbierające treści wyłącznie do trenowania modeli AI
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
 Sitemap: {DOMAIN}/sitemap.xml
 """
 save_file("robots.txt", ROBOTS_TXT)
