@@ -85,7 +85,7 @@ else
 fi
 
 echo ">> 6/7 Firewall"
-SSH_PORT=$(sshd -T 2>/dev/null | awk '/^port /{print $2; exit}')
+SSH_PORT=$(sshd -T 2>/dev/null | awk '/^port /{print $2}' | head -n1 || true)
 SSH_PORT=${SSH_PORT:-22}
 ufw default deny incoming
 ufw default allow outgoing
