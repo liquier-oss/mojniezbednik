@@ -31,6 +31,7 @@ section() { printf '\n===== %s =====\n' "$1"; }
   section "Pamięć";            free -h
   section "Usługi";            for s in nginx ssh fail2ban unattended-upgrades; do printf '%s: %s\n' "$s" "$(systemctl is-active $s)"; done
   section "fail2ban sshd";     fail2ban-client status sshd 2>&1 | tail -n 6
+  section "SSH - aktywne ustawienia"; sshd -T 2>/dev/null | grep -iE "^(passwordauthentication|permitrootlogin|allowusers|maxauthtries) "
   section "SSH - udane logowania (24h)"; journalctl -u ssh --since "24 hours ago" --no-pager 2>/dev/null | grep -i "accepted" | tail -n 20
   section "SSH - nieudane próby (24h, liczba)"; journalctl -u ssh --since "24 hours ago" --no-pager 2>/dev/null | grep -Eic "failed|invalid user"
   section "Firewall";          ufw status | head -n 8; echo "(reguł cloudflare: $(ufw status | grep -c cloudflare))"
@@ -48,7 +49,7 @@ section() { printf '\n===== %s =====\n' "$1"; }
   find "$WEB_ROOT" -type f \( -name '*.php' -o -name '*.sh' -o -name '*.py' -o -name '*.cgi' \) 2>/dev/null | head -n 20
 } > "$DATA" 2>&1
 
-PROMPT="Jesteś administratorem bezpieczeństwa. Poniżej dane z serwera VPS (Ubuntu, nginx, statyczna strona HTML ${DOMAIN} za Cloudflare). Napisz krótki raport po polsku (max 15 linii): na początku jedna linia STATUS: OK / UWAGA / ALARM, potem konkretne problemy od najważniejszego i dokładne polecenia naprawy. Nie wymyślaj problemów, których nie ma w danych. Strona jest generowana skryptem update_hub.py (z GitHuba) do /var/www/hub - zmienione tam pliki .html są normalne po wdrożeniu; podejrzane są pliki .php/.sh/.py lub nieznane katalogi. Na serwerze działa też cron root z /root/raport_ruchu.py - to znany, własny skrypt."
+PROMPT="Jesteś administratorem bezpieczeństwa. Poniżej dane z serwera VPS (Ubuntu, nginx, statyczna strona HTML ${DOMAIN} za Cloudflare). Napisz krótki raport po polsku (max 15 linii): na początku jedna linia STATUS: OK / UWAGA / ALARM, potem konkretne problemy od najważniejszego i dokładne polecenia naprawy. Nie wymyślaj problemów, których nie ma w danych. Strona jest generowana skryptem update_hub.py (z GitHuba) do /var/www/hub - zmienione tam pliki .html są normalne po wdrożeniu; podejrzane są pliki .php/.sh/.py lub nieznane katalogi. Na serwerze działa też cron root z /root/raport_ruchu.py - to znany, własny skrypt. Logowanie hasłem SSH dla użytkownika ubuntu jest świadomym wyborem właściciela (chronione fail2ban) - nie zgłaszaj go jako problemu, zgłaszaj tylko podejrzane udane logowania z nieznanych IP. Użytkownik deploy logujący się kluczem z adresów Azure/Microsoft to GitHub Actions (wdrożenia) - klucz ma wymuszoną komendę, to normalne."
 
 cd "$(mktemp -d)"
 REPORT=$(claude -p "$PROMPT" --model sonnet \

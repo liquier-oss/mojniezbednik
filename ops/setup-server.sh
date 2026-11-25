@@ -31,9 +31,11 @@ echo ">> 3/7 fail2ban (blokada zgadywania haseł SSH)"
 cat > /etc/fail2ban/jail.local <<'EOF'
 [sshd]
 enabled  = true
-maxretry = 5
-findtime = 10m
-bantime  = 1h
+backend  = systemd
+maxretry = 3
+findtime = 1h
+bantime  = 1d
+bantime.increment = true
 EOF
 systemctl enable --now fail2ban
 systemctl restart fail2ban
@@ -62,26 +64,32 @@ chown -R deploy:deploy "$WEB_ROOT"
 find "$WEB_ROOT" -type d -exec chmod 755 {} +
 find "$WEB_ROOT" -type f -exec chmod 644 {} +
 
-echo ">> 5/7 SSH: logowanie tylko kluczem"
-ADMIN="${SUDO_USER:-root}"
+echo ">> 5/7 SSH"
+# SSH_PASSWORD_LOGIN=no wyłącza hasła (tylko klucze). Domyślnie hasła zostają włączone.
+SSH_PASSWORD_LOGIN="${SSH_PASSWORD_LOGIN:-yes}"
+ADMIN="${SUDO_USER:-ubuntu}"; [ "$ADMIN" = root ] && ADMIN=ubuntu
 ADMIN_HOME=$(getent passwd "$ADMIN" | cut -d: -f6)
-if [ -s "$ADMIN_HOME/.ssh/authorized_keys" ]; then
-  cat > /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'
-PasswordAuthentication no
+if [ "$SSH_PASSWORD_LOGIN" = "no" ] && [ ! -s "$ADMIN_HOME/.ssh/authorized_keys" ]; then
+  echo "   $ADMIN nie ma klucza SSH - zostawiam logowanie hasłem."
+  SSH_PASSWORD_LOGIN=yes
+fi
+# Plik 00- wczytuje się przed 50-cloud-init.conf, więc jego ustawienia wygrywają
+rm -f /etc/ssh/sshd_config.d/99-hardening.conf
+cat > /etc/ssh/sshd_config.d/00-hardening.conf <<EOF
+PasswordAuthentication $SSH_PASSWORD_LOGIN
 KbdInteractiveAuthentication no
-PermitRootLogin prohibit-password
-MaxAuthTries 4
+PermitRootLogin no
+MaxAuthTries 3
+LoginGraceTime 30
+AllowUsers $ADMIN deploy
 X11Forwarding no
 EOF
-  if sshd -t; then
-    systemctl reload ssh
-    echo "   Hasła wyłączone. Logujesz się kluczem jako $ADMIN."
-  else
-    rm -f /etc/ssh/sshd_config.d/99-hardening.conf
-    echo "   Błąd konfiguracji SSH - cofnięto zmianę."
-  fi
+if sshd -t; then
+  systemctl reload ssh
+  echo "   SSH: hasła=$SSH_PASSWORD_LOGIN, root wyłączony, dozwoleni: $ADMIN, deploy."
 else
-  echo "   UWAGA: $ADMIN nie ma klucza SSH - zostawiam logowanie hasłem. Dodaj klucz i uruchom skrypt ponownie."
+  rm -f /etc/ssh/sshd_config.d/00-hardening.conf
+  echo "   Błąd konfiguracji SSH - cofnięto zmianę."
 fi
 
 echo ">> 6/7 Firewall"
