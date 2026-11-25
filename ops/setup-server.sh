@@ -93,29 +93,20 @@ else
 fi
 
 echo ">> 6/7 Firewall"
+# Na serwerze są dwie strony: mojniezbednik.pl (za Cloudflare) i park-swiatowida.pl
+# (bezpośrednio, certyfikat Let's Encrypt). Dlatego www (80/443) jest otwarte dla wszystkich.
 SSH_PORT=$(sshd -T 2>/dev/null | awk '/^port /{print $2}' | head -n1 || true)
 SSH_PORT=${SSH_PORT:-22}
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow "$SSH_PORT"/tcp comment ssh
-# usuń ogólne reguły www, jeśli istnieją - www będzie tylko z Cloudflare
-ufw --force delete allow 'Nginx Full' 2>/dev/null || true
-ufw --force delete allow 'Nginx HTTP' 2>/dev/null || true
-ufw --force delete allow 'Nginx HTTPS' 2>/dev/null || true
-ufw --force delete allow 80/tcp 2>/dev/null || true
-ufw --force delete allow 443/tcp 2>/dev/null || true
-ufw --force delete allow 80 2>/dev/null || true
-ufw --force delete allow 443 2>/dev/null || true
+ufw allow 80,443/tcp comment www-wszyscy
 ufw --force enable
-install -m 750 "$HERE/cloudflare-only.sh" /usr/local/sbin/cloudflare-only.sh
-/usr/local/sbin/cloudflare-only.sh
 
 echo ">> 7/7 Nagłówki nginx i zadania cron"
 install -m 644 "$HERE/security-headers.conf" /etc/nginx/snippets/security-headers.conf
 install -m 750 "$HERE/audit.sh" /usr/local/sbin/audyt.sh
 cat > /etc/cron.d/mojniezbednik <<'EOF'
-# Aktualizacja listy IP Cloudflare - poniedziałek 4:17
-17 4 * * 1 root /usr/local/sbin/cloudflare-only.sh >/var/log/cloudflare-only.log 2>&1
 # Audyt bezpieczeństwa z raportem Claude - codziennie 6:05 (wymaga /etc/audyt.env)
 5 6 * * * root [ -f /etc/audyt.env ] && /usr/local/sbin/audyt.sh >/var/log/audyt-cron.log 2>&1
 EOF
