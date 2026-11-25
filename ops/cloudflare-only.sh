@@ -25,6 +25,12 @@ done
 
 # 3) Prawdziwe IP odwiedzających w nginx
 CONF=/etc/nginx/conf.d/cloudflare-realip.conf
+# Jeśli inny plik już ustawia real_ip_header, nie dubluj (nginx by się nie uruchomił)
+if grep -rlq "real_ip_header" /etc/nginx --exclude="$(basename "$CONF")" 2>/dev/null; then
+  rm -f "$CONF"
+  echo "OK: reguły firewall Cloudflare zaktualizowane; real_ip ustawia już inny plik nginx - pomijam."
+  exit 0
+fi
 {
   echo "# Generowane automatycznie przez cloudflare-only.sh - nie edytuj ręcznie"
   for ip in $V4 $V6; do echo "set_real_ip_from $ip;"; done
@@ -35,8 +41,9 @@ mv "$CONF.new" "$CONF"
 if nginx -t 2>/dev/null; then
   systemctl reload nginx
 else
-  echo "Uwaga: nginx -t zgłasza błąd, nie przeładowano nginx." >&2
-  nginx -t
+  rm -f "$CONF"
+  echo "Uwaga: nginx -t zgłaszał błąd - usunięto $CONF, nginx bez zmian." >&2
+  nginx -t || true
 fi
 
 echo "OK: reguły Cloudflare zaktualizowane ($(echo $V4 $V6 | wc -w) zakresów)."
