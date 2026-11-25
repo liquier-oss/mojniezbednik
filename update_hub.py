@@ -393,6 +393,19 @@ input, select {
     .en-hint { margin: 0.75rem 0.75rem 0; }
 }
 
+/* --- TABELE POWIĄZANYCH POZYCJI --- */
+.table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+.rel-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; }
+.rel-table th { text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); }
+.rel-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--soft-line); vertical-align: top; color: var(--text); }
+.rel-table td:last-child { color: var(--accent); font-weight: 700; white-space: nowrap; }
+.rel-table tr:last-child td { border-bottom: none; }
+.rel-table a { color: var(--text); text-decoration: none; }
+.rel-table a:hover { color: var(--accent); text-decoration: underline; }
+.rel-table tr.current td { background: var(--warning-bg); font-weight: 700; }
+.rel-table tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+@media (max-width: 640px) { .rel-table td:last-child { white-space: normal; } }
+
 /* --- STYLE DLA INTERAKTYWNYCH CHECKLIST --- */
 .checklist-action-bar {
     display: flex;
@@ -485,7 +498,7 @@ footer {
 
 @media print {
     body { background: #fff !important; color: #000 !important; font-size: 10.5pt; padding: 0; line-height: 1.35; }
-    header, footer, .checklist-action-bar, .add-custom-box, .breadcrumbs, .btn, button, .alert-box { display: none !important; }
+    header, footer, .checklist-action-bar, .add-custom-box, .breadcrumbs, .btn, button, .alert-box, .rel-table, .table-wrap { display: none !important; }
     main { max-width: 100%; margin: 0; padding: 0; }
     h1 { font-size: 15pt; margin-bottom: 0.25rem; color: #000 !important; }
     h2, .group-title { color: #000 !important; border-bottom: 1px solid #999; font-size: 11.5pt; margin: 0.75rem 0 0.25rem; }
@@ -516,6 +529,25 @@ ICON = {
     "bike": _svg('<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9 9h6l3.5 7.5M9 9l3 7.5h-6.5M15 9l-1.5-3H11"/>'),
     "lists": _svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 12 2 2 4-4M9 17h6"/>'),
 }
+
+def related_table(rows, current_href, heading, col1, col2):
+    """Tabela pozycji z tej samej kategorii; bieżąca strona wyróżniona i bez linku."""
+    if len(rows) < 2:
+        return ""
+    trs = []
+    for href, label, value in rows:
+        if href == current_href:
+            trs.append(f'<tr class="current" aria-current="page"><td>{label}</td><td>{value}</td></tr>')
+        else:
+            trs.append(f'<tr><td><a href="{href}">{label}</a></td><td>{value}</td></tr>')
+    return (f'<h2>{heading}</h2>\n    <div class="table-wrap"><table class="rel-table">'
+            f'<thead><tr><th>{col1}</th><th>{col2}</th></tr></thead><tbody>{"".join(trs)}</tbody></table></div>')
+
+def _is_meat(slug):
+    return any(k in slug for k in ["kurczak", "udka", "skrzydelka", "nuggetsy", "karkowka", "schabowy", "mielone", "stek", "burger", "losos", "dorsz", "krewetki", "paluszki", "boczek", "kielbasa"])
+
+def _badge_group(badge):
+    return badge.split(" ", 1)[-1]
 
 # 3. Wspólny szablon HTML. Wersja PL i EN (My Toolbelt) to osobne strony:
 #    polska pod "/", angielska pod "/en/", powiązane przez hreflang.
@@ -769,7 +801,7 @@ ROWER_ITEMS = [
     ("tabela-obwodow-kol-licznik-rowerowy", "Tabela obwodów kół do licznika rowerowego (mm): 700×38c, 700×40c, 29×2.0", "700×40c ≈ 2200 mm", "700×38c ≈ 2180 mm | 29×2.0 (50-622) ≈ 2265 mm", "Rzeczywisty obwód zależy od ciśnienia, szerokości wewnętrznej obręczy i ugięcia opony. Dla najwyższej dokładności wykonaj test toczenia (od wentyla do wentyla na podłodze pod obciążeniem).", "opony"),
     ("jaka-szerokosc-opony-do-obreczy-19mm-25mm", "Jaka szerokość opony do obręczy 19 mm, 21 mm i 25 mm (wewnętrzna ETRTO)?", "Obręcz 19 mm: zwykle 28–50 mm", "Obręcz 25 mm: zwykle 42–65 mm (sprawdź tabelę producenta obręczy)", "Zbyt wąska opona na szerokiej obręczy zmienia swój profil i naraża rant na uszkodzenie, a zbyt szeroka na wąskiej obręczy pływa w zakrętach.", "opony"),
     ("momenty-dokrecania-rower-mostek-kierownica", "Orientacyjne momenty dokręcania (Nm): Mostek, kierownica, sztyca, pedały", "Mostek/kierownica (Alu): zwykle 4–5 Nm", "Obejma sztycy: 5–6 Nm | Pedały: 35–40 Nm", "UWAGA: Wartości orientacyjne dla komponentów aluminiowych! Zawsze sprawdzaj nadruk 'MAX Nm' bezpośrednio na części. Dla karbonu często obowiązuje limit 4 Nm oraz wymóg stosowania pasty Carbon Grip.", "serwis"),
-    ("momenty-dokrecania-kaseta-tarcze-centerlock", "Orientacyjne momenty dokręcania: Kaseta i tarcze hamulcowe", "Nakrętka kasety / tarczy Centerlock: 40 Nm", "Tarcza hamulcowa na 6 śrub (Torx T25): 5 – 6 Nm", "Śruby tarczy na 6 śrub dokręcaj kluczem dynamometrycznym w kolejności gwiazdowej (na krzyż).", "serwis"),
+    ("momenty-dokrecania-kaseta-tarcze-centerlock", "Orientacyjne momenty dokręcania: Kaseta i tarcze hamulcowe", "Nakrętka kasety / tarczy Centerlock: 40 Nm", "Tarcza na 6 śrub (Torx T25): Shimano 2–4 Nm | SRAM 6,2 Nm", "Moment śrub tarczy zależy od producenta – Shimano podaje 2–4 Nm, SRAM/Avid 6,2 Nm; zawsze sprawdź instrukcję swojej tarczy. Dokręcaj kluczem dynamometrycznym w kolejności gwiazdowej (na krzyż), najlepiej z niebieskim klejem do gwintów.", "serwis"),
     ("zuzycie-lancucha-kiedy-wymienic-05-075", "Kiedy wymienić łańcuch rowerowy? (Przymiar 0.5% vs 0.75%)", "Napędy 10 / 11 / 12-rzędowe: przy 0.5%", "Napędy 8 / 9-rzędowe: przy 0.75%", "Używaj przymiaru trójpunktowego (eliminującego luz rolki, np. Park Tool CC-4 lub Pedro's) – zwykłe dwupunktowe blaszki potrafią zawyżać wynik.", "serwis"),
     ("jakie-klocki-hamulcowe-zywiczne-czy-polmetaliczne", "Klocki hamulcowe do roweru: Żywiczne, półmetaliczne czy metaliczne?", "Gravel / Trail: Półmetaliczne", "Góry / Błoto / Bikepacking: Metaliczne | Szosa / Sucho: Żywiczne", "Przed założeniem klocków półmetalicznych lub metalicznych upewnij się, że Twoja tarcza hamulcowa nie ma wybicia 'Resin Pad Only' (tylko pod klocki żywiczne).", "serwis"),
     ("rozmiar-ramy-gravel-wzrost-175-przekrok-80", "Rozmiar ramy gravelowej na wzrost 175 cm i przekrok 80 cm (punkt wyjścia)", "Orientacyjnie: 52–54 cm (S/M lub M)", "Porównuj parametry Stack i Reach (np. Reach 375–388 mm)", "Rozmiarówki producentów różnią się diametralnie. Przy przekroku 80 cm zwróć uwagę na przekrok ramy (Standover) oraz długość rury podsiodłowej.", "dopasowanie"),
@@ -1177,7 +1209,7 @@ function calcMortar() {
         const sandBuckets = (4 * b).toFixed(1).replace('.0', '');
         const gravelBuckets = (6 * b).toFixed(1).replace('.0', '');
         const waterL = Math.round(11 * b);
-        const yieldL = Math.round(100 * b);
+        const yieldL = Math.round(80 * b);
         box.innerHTML = isEn
             ? `<h3>Proportion 1 : 2 : 3 (Output: ~${yieldL} L of wet concrete)</h3><ul><li><strong>Cement:</strong> ${cemBags} bag(s) 25 kg <em>(or ${cemBuckets} × 10L buckets)</em></li><li><strong>Sand (0–2 mm):</strong> ${sandBuckets} × 10L buckets</li><li><strong>Gravel / Aggregate (2–16 mm):</strong> ${gravelBuckets} × 10L buckets</li><li><strong>Water:</strong> approx. ${waterL} L (adjust for earth-moist consistency)</li></ul>`
             : `<h3>Proporcja objętościowa 1 : 2 : 3 (Uzyskasz ok. ${yieldL} litrów gotowego betonu)</h3><ul><li><strong>Cement:</strong> ${cemBags} worek 25 kg <em>(czyli ok. ${cemBuckets} wiadra 10L)</em></li><li><strong>Piasek płukany:</strong> ${sandBuckets} wiadra budowlane (po 10L)</li><li><strong>Żwir / Kruszywo (2–16 mm):</strong> ${gravelBuckets} wiader budowlanych (po 10L)</li><li><strong>Woda:</strong> ok. ${waterL} litrów (dolewaj stopniowo do konsystencji wilgotnej ziemi)</li></ul>`;
@@ -1273,6 +1305,9 @@ for slug, title, temp, mins, tip in KUCHNIA_ITEMS:
     if is_meat:
         safety_banner = """<div class="alert-box alert-danger"><strong>🌡️ Bezpieczeństwo żywności:</strong> Podany czas ma charakter wyłącznie orientacyjny i zależy od grubości porcji oraz temperatury początkowej mięsa. Dla drobiu zawsze weryfikuj gotowość termometrem kuchennym w najgrubszym miejscu – bezpieczna temperatura wewnętrzna to <strong>minimum 74°C</strong>.</div>"""
 
+    related_html = related_table(
+        [(f"/kuchnia/{x[0]}.html", x[1], f"{x[2]}°C · ~{x[3]} min") for x in KUCHNIA_ITEMS if _is_meat(x[0]) == _is_meat(slug)],
+        f"/{rel_url}", "Mięso i ryby w Airfryerze – zestawienie" if _is_meat(slug) else "Warzywa, przekąski i inne – zestawienie", "Produkt", "Temp. · czas")
     body = f"""
     <div class="breadcrumbs"><a href="/">Start</a> » <a href="/kuchnia/">Kuchnia</a> » {title}</div>
     <h1>{title} – Orientacyjny Czas i Temperatura</h1>
@@ -1300,6 +1335,7 @@ for slug, title, temp, mins, tip in KUCHNIA_ITEMS:
             <li><strong>Kontrola przed końcem:</strong> Zajrzyj do szuflady na 2–3 minuty przed upływem czasu, a w przypadku mięsa i drobiu użyj termometru szpilkowego.</li>
         </ul>
     </div>
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/kuchnia/" class="btn">← Wróć do pełnej tabeli Airfryer</a></p>
     <script>
     let interval = null, wakeLock = null, timeLeft = {mins*60}, isRunning = false;
@@ -1494,6 +1530,9 @@ for slug, title, val1, val2, tip, sub_cat in WARSZTAT_ITEMS:
             <p>Zawsze weryfikuj wymagania w instrukcji obsługi swojego urządzenia lub narzędzia przed zastosowaniem przeliczników w praktyce.</p>
         </div>"""
 
+    related_html = related_table(
+        [(f"/warsztat/{x[0]}.html", x[1], x[2]) for x in WARSZTAT_ITEMS if x[5] == sub_cat],
+        f"/{rel_url}", f"Wszystkie pozycje: {SUB_LABELS_W.get(sub_cat, 'Warsztat')}", "Pozycja", "Wartość")
     body = f"""
     <div class="breadcrumbs"><a href="/">Start</a> » <a href="/warsztat/">Warsztat</a> » {title}</div>
     <h1>{title}</h1>
@@ -1506,6 +1545,7 @@ for slug, title, val1, val2, tip, sub_cat in WARSZTAT_ITEMS:
     <h2>🛠️ Wskazówka praktyczna</h2>
     <div class="info-box"><p>{tip}</p></div>
     {conditions_html}
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/warsztat/" class="btn">← Wróć do wszystkich tabel warsztatowych</a></p>
     """
     save_file(rel_url, wrap_html(title, f"{title} – orientacyjny parametr ({val1}) wraz z warunkami zastosowania.", body, rel_url))
@@ -1530,6 +1570,9 @@ for slug, title, val1, val2, tip, sub_cat in ROWER_ITEMS:
     elif "momenty" in slug:
         extra_alert = """<div class="alert-box"><strong>🔧 Ważne:</strong> Przykładowe wartości nie zastępują instrukcji konkretnego komponentu. Przed dokręceniem sprawdź oznaczenie momentu nadrukowane bezpośrednio na mostku, kierownicy lub sztycy.</div>"""
 
+    related_html = related_table(
+        [(f"/rower/{x[0]}.html", x[1], x[2]) for x in ROWER_ITEMS if x[5] == sub_cat],
+        f"/{rel_url}", f"Wszystkie pozycje: {SUB_LABELS_R.get(sub_cat, 'Rower')}", "Pozycja", "Wartość")
     body = f"""
     <div class="breadcrumbs"><a href="/">Start</a> » <a href="/rower/">Rower</a> » {title}</div>
     <h1>{title}</h1>
@@ -1541,6 +1584,7 @@ for slug, title, val1, val2, tip, sub_cat in ROWER_ITEMS:
     </div>
     <h2>🚲 Wskazówka serwisowa i warunki</h2>
     <div class="info-box"><p>{tip}</p></div>
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/rower/" class="btn">← Wróć do kalkulatora i tabel rowerowych</a></p>
     """
     save_file(rel_url, wrap_html(title, f"{title} – punkt startowy ({val1}), limity bezpieczeństwa i wskazówki serwisowe.", body, rel_url))
@@ -1570,6 +1614,9 @@ for slug, title, badge_cat, desc, groups in LISTY_ITEMS:
             </ul>
         </div>"""
 
+    related_html = related_table(
+        [(f"/listy/{x[0]}.html", x[1], sum(len(i) for _, i in x[4])) for x in LISTY_ITEMS if _badge_group(x[2]) == _badge_group(badge_cat)],
+        f"/{rel_url}", f"Podobne listy: {_badge_group(badge_cat)}", "Lista", "Pozycji")
     body = f"""
     <div class="breadcrumbs"><a href="/">Start</a> » <a href="/listy/">Listy i Niezbędniki</a> » {title}</div>
     <h1>{title}</h1>
@@ -1599,6 +1646,7 @@ for slug, title, badge_cat, desc, groups in LISTY_ITEMS:
         <ul class="item-list" id="customList"></ul>
     </div>
 
+    {related_html}
     <p style="margin-top:2rem;"><a href="/listy/" class="btn">← Zobacz wszystkie Listy i Niezbędniki</a></p>
 
     <script>
@@ -2212,6 +2260,9 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in WARSZTAT_ITEMS:
     extra_alert = ""
     if sub_cat == "stal":
         extra_alert = """<div class="alert-box"><strong>🔥 Technical note:</strong> heat-treatment parameters are typical catalogue ranges. Before hardening, always check the material data sheet (certificate) from the supplier of your batch of steel.</div>"""
+    related_html = related_table(
+        [(f"/en/workshop/{WORKSHOP_EN[x[0]][0]}.html", WORKSHOP_EN[x[0]][1], WORKSHOP_EN[x[0]][2]) for x in WARSZTAT_ITEMS if x[5] == sub_cat and x[0] in WORKSHOP_EN],
+        f"/{rel_url}", f"All items: {SUB_LABELS_W_EN.get(sub_cat, 'Workshop')}", "Item", "Value")
     body = f"""
     <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/workshop/">Workshop</a> » {title}</div>
     <h1>{title}</h1>
@@ -2224,6 +2275,7 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in WARSZTAT_ITEMS:
     <h2>🛠️ Practical tip</h2>
     <div class="info-box"><p>{tip}</p></div>
     {COND_W_EN.get(sub_cat, COND_W_EN_DEFAULT)}
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/en/workshop/" class="btn">← Back to all workshop tables</a></p>
     """
     save_file(rel_url, wrap_html(title, f"{title} – reference value ({val1}) with conditions of use.", body, rel_url, lang="en"))
@@ -2246,6 +2298,9 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in ROWER_ITEMS:
         extra_alert = """<div class="alert-box alert-danger"><strong>⚠️ Safety limits (hookless rims and tyres):</strong> these are <strong>starting pressures to fine-tune</strong>, calculated for the <strong>total system weight (rider + bike + gear)</strong>. Never exceed the maximum printed on the tyre sidewall or the rim limit. For hookless rims the absolute maximum is usually <strong>5.0 bar (72.5 PSI)</strong>!</div>"""
     elif "momenty" in slug:
         extra_alert = """<div class="alert-box"><strong>🔧 Important:</strong> typical values do not replace the instructions for your specific component. Before tightening, check the torque marking printed on the stem, handlebar or seatpost.</div>"""
+    related_html = related_table(
+        [(f"/en/cycling/{CYCLING_EN[x[0]][0]}.html", CYCLING_EN[x[0]][1], CYCLING_EN[x[0]][2]) for x in ROWER_ITEMS if x[5] == sub_cat and x[0] in CYCLING_EN],
+        f"/{rel_url}", f"All items: {SUB_LABELS_R_EN.get(sub_cat, 'Cycling')}", "Item", "Value")
     body = f"""
     <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/cycling/">Cycling</a> » {title}</div>
     <h1>{title}</h1>
@@ -2257,6 +2312,7 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in ROWER_ITEMS:
     </div>
     <h2>🚲 Service tip and conditions</h2>
     <div class="info-box"><p>{tip}</p></div>
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/en/cycling/" class="btn">← Back to the calculator and cycling tables</a></p>
     """
     save_file(rel_url, wrap_html(title, f"{title} – starting point ({val1}), safety limits and service tips.", body, rel_url, lang="en"))
@@ -2430,6 +2486,9 @@ for slug, _title_pl, temp, mins, _tip_pl in KUCHNIA_ITEMS:
     if is_meat:
         safety_banner = """<div class="alert-box alert-danger"><strong>🌡️ Food safety:</strong> the time is only approximate and depends on the thickness of the portion and the starting temperature of the meat. For poultry always check doneness with a kitchen thermometer in the thickest part – the safe internal temperature is <strong>at least 74°C (165°F)</strong>.</div>"""
 
+    related_html = related_table(
+        [(f"/en/kitchen/{KITCHEN_EN[x[0]][0]}.html", KITCHEN_EN[x[0]][1], f"{x[2]}°C · ~{x[3]} min") for x in KUCHNIA_ITEMS if x[0] in KITCHEN_EN and _is_meat(x[0]) == _is_meat(slug)],
+        f"/{rel_url}", "Meat and fish in the air fryer – overview" if _is_meat(slug) else "Vegetables, snacks and more – overview", "Food", "Temp · time")
     body = f"""
     <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/kitchen/">Kitchen</a> » {title}</div>
     <h1>{title} – Time and Temperature</h1>
@@ -2457,6 +2516,7 @@ for slug, _title_pl, temp, mins, _tip_pl in KUCHNIA_ITEMS:
             <li><strong>Check before the end:</strong> look into the drawer 2–3 minutes before the time is up, and use a probe thermometer for meat and poultry.</li>
         </ul>
     </div>
+    {related_html}
     <p style="margin-top:1.5rem;"><a href="/en/kitchen/" class="btn">← Back to the full air fryer table</a></p>
     <script>
     let interval = null, wakeLock = null, timeLeft = {mins*60}, isRunning = false;
@@ -2589,6 +2649,9 @@ for slug, *_pl in LISTY_ITEMS:
             </ul>
         </div>"""
 
+    related_html = related_table(
+        [(f"/en/checklists/{v[0]}.html", v[1], sum(len(i) for _, i in v[4])) for v in LISTS_EN.values() if _badge_group(v[2]) == _badge_group(badge_cat)],
+        f"/{rel_url}", f"Similar checklists: {_badge_group(badge_cat)}", "List", "Items")
     body = f"""
     <div class="breadcrumbs"><a href="/en/">Home</a> » <a href="/en/checklists/">Checklists</a> » {title}</div>
     <h1>{title}</h1>
@@ -2618,6 +2681,7 @@ for slug, *_pl in LISTY_ITEMS:
         <ul class="item-list" id="customList"></ul>
     </div>
 
+    {related_html}
     <p style="margin-top:2rem;"><a href="/en/checklists/" class="btn">← See all checklists</a></p>
 
     <script>
