@@ -689,6 +689,20 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
             .replace(/ł/g, "l")
             .replace(/[-_\\s]+/g, "");
     }}
+    // Licznik odwiedzin bez ciasteczek: tylko adres strony i domena, z której ktoś przyszedł.
+    // Wejście z ?ja=1 wyłącza liczenie na tym urządzeniu (?ja=0 włącza z powrotem).
+    (function () {{
+        try {{
+            var q = location.search;
+            if (/[?&]ja=1/.test(q)) localStorage.setItem("mn_ja", "1");
+            if (/[?&]ja=0/.test(q)) localStorage.removeItem("mn_ja");
+            if (localStorage.getItem("mn_ja") || navigator.webdriver) return;
+            var r = "";
+            try {{ if (document.referrer) r = new URL(document.referrer).hostname; }} catch (e) {{}}
+            fetch("/hit?p=" + encodeURIComponent(location.pathname) + "&r=" + encodeURIComponent(r),
+                  {{ keepalive: true, cache: "no-store", credentials: "omit" }});
+        }} catch (e) {{}}
+    }})();
     </script>
 </head>
 <body>
@@ -3693,6 +3707,9 @@ Disallow: /
 Sitemap: {DOMAIN}/sitemap.xml
 """
 save_file("robots.txt", ROBOTS_TXT)
+# Pusty plik dla licznika odwiedzin (zapytania /hit trafiają do logu nginx)
+with open(os.path.join(BASE_DIR, "hit"), "w") as _f:
+    _f.write("")
 
 # 13. Pliki statyczne z repozytorium: favicon, ikona na ekran główny, obrazek do udostępniania
 STATIC_DIR = os.path.join(SCRIPT_DIR, "static")
