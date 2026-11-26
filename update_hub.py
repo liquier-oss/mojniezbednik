@@ -662,6 +662,7 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="p:domain_verify" content="a242838156994feb4772dc978734e369">
     <title>{title} | {title_suffix}</title>
     <meta name="description" content="{d_attr}">
     {head_index}{hreflang}
