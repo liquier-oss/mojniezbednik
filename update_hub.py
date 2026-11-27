@@ -296,6 +296,10 @@ button, .btn {
 button:hover, .btn:hover { background: var(--accent-hover); }
 .btn-secondary { background: var(--secondary); color: var(--text); }
 .btn-secondary:hover { background: var(--secondary-hover); }
+.share-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.share-btn { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; margin: 0; }
+.share-msg { font-size: 0.9rem; color: var(--muted); }
+.print-url { display: none; }
 .filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -515,6 +519,8 @@ footer {
         page-break-inside: avoid;
     }
     .item-row.checked span { text-decoration: none; opacity: 1; }
+    .share-bar { display: none !important; }
+    .print-url { display: block !important; margin-top: 0.8rem; padding-top: 0.4rem; border-top: 1px solid #999; font-size: 9pt; color: #000 !important; }
 }
 """
 save_file("style.css", STYLE_CSS)
@@ -530,6 +536,7 @@ ICON = {
     "kitchen": _svg('<path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M2 10h2M20 10h2"/><path d="M9 6c0-1 1-1 1-2M14 6c0-1 1-1 1-2"/>'),
     "workshop": _svg('<path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3z"/><path d="M14.7 6.3 17 4l3 3-2.3 2.3"/>'),
     "bike": _svg('<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9 9h6l3.5 7.5M9 9l3 7.5h-6.5M15 9l-1.5-3H11"/>'),
+    "share": _svg('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>'),
     "lists": _svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 12 2 2 4-4M9 17h6"/>'),
 }
 
@@ -575,6 +582,35 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
         hreflang = (f'\n    <link rel="alternate" hreflang="pl" href="{pl_url}">'
                     f'\n    <link rel="alternate" hreflang="en" href="{en_url}">'
                     f'\n    <link rel="alternate" hreflang="x-default" href="{pl_url}">')
+    # Udostępnianie (telefon: menu systemowe; komputer: kopiowanie linku) i adres strony na wydruku
+    share_html, share_script = "", ""
+    if not noindex:
+        if lang == "en":
+            sh_btn, sh_ok, sh_err, sh_print = "Share", "Link copied", "Copy this link:", "Printed from"
+        else:
+            sh_btn, sh_ok, sh_err, sh_print = "Udostępnij", "Skopiowano link", "Skopiuj link:", "Wydrukowano z"
+        share_html = (f'<div class="share-bar"><button type="button" class="btn-secondary share-btn" id="siteShareBtn">'
+                      f'{ICON["share"]}{sh_btn}</button><span class="share-msg" id="siteShareMsg" aria-live="polite"></span></div>\n'
+                      f'<p class="print-url">{sh_print}: {canonical_url}</p>')
+        share_script = f"""
+(function () {{
+    var b = document.getElementById("siteShareBtn"), m = document.getElementById("siteShareMsg");
+    if (!b) return;
+    var url = "{canonical_url}";
+    b.addEventListener("click", function () {{
+        if (navigator.share) {{
+            navigator.share({{ title: document.title, url: url }}).catch(function () {{}});
+            return;
+        }}
+        if (navigator.clipboard && navigator.clipboard.writeText) {{
+            navigator.clipboard.writeText(url).then(function () {{ m.textContent = "{sh_ok} ✓"; }},
+                function () {{ m.textContent = "{sh_err} " + url; }});
+        }} else {{
+            m.textContent = "{sh_err} " + url;
+        }}
+    }});
+}})();
+"""
     if alt_path is not None:
         switch_href = "/" + alt_path
     else:
@@ -711,10 +747,11 @@ def wrap_html(title, desc, body, canonical_path="", noindex=False, lang="pl"):
 {header_html}
 {en_hint}<main>
 {body}
+{share_html}
 </main>
 {footer_html}
 <script>
-{en_hint_script}</script>
+{en_hint_script}{share_script}</script>
 </body>
 </html>"""
 
