@@ -131,8 +131,9 @@ def czytaj_linie(baza):
             continue
 
 
-def analizuj(baza):
-    """Zwraca (dni, najstarszy_wpis). dni: data -> statystyki dnia."""
+def analizuj(baza, start_licznika=None):
+    """Zwraca (dni, najstarszy_wpis). dni: data -> statystyki dnia.
+    start_licznika: pierwszy dzień z /hit zapisany w historii (od niego zawsze metoda licznika)."""
     wpisy = []
     moje_ip = defaultdict(set)    # dzień -> IP, które oglądały statystyki
     z_licznikiem = set()          # dni, w których działał /hit
@@ -153,6 +154,13 @@ def analizuj(baza):
             z_licznikiem.add(dzien)
         wpisy.append((dzien, ip, m.group("method"), path, int(m.group("status")),
                       m.group("ref"), m.group("ua")))
+
+    if z_licznikiem:
+        pierwszy = min(z_licznikiem)
+        start_licznika = min(start_licznika, pierwszy) if start_licznika else pierwszy
+    # od wdrożenia licznika liczymy nim także dni bez żadnego /hit (wtedy ludzi = 0)
+    if start_licznika:
+        z_licznikiem |= {w[0] for w in wpisy if w[0] >= start_licznika}
 
     dni = defaultdict(nowy_dzien)
     for dzien, ip, metoda, path, status, ref, ua in wpisy:
@@ -200,6 +208,7 @@ def analizuj(baza):
 
     for dzien in z_licznikiem:
         d = dni[dzien]
+        d["metoda"] = "licznik"
         d["boty"] = max(d["calosc"] - d["ludzie"], 0)
     return dni, najstarszy
 
@@ -430,7 +439,8 @@ def wyslij_whatsapp(tekst):
 def main():
     hist = wczytaj_historie()
     for nazwa, sciezka in STRONY.items():
-        dni, najstarszy = analizuj(sciezka)
+        start = min((k for k, v in hist.get(nazwa, {}).items() if v.get("metoda") == "licznik"), default=None)
+        dni, najstarszy = analizuj(sciezka, start)
         if dni:
             aktualizuj_historie(hist, nazwa, dni, najstarszy)
     zapisz_historie(hist)
