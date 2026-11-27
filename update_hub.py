@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import re
 import json
 import html
 import shutil
@@ -1980,31 +1981,42 @@ def fuel_table(lang):
     rows = "".join("<tr><td>" + f"{l} l" + "</td>" + "".join(f"<td>{round(l * 1000 / r):g} ml</td>" for r in FUEL_RATIOS) + "</tr>" for l in FUEL_LITRES)
     return f'<div class="table-wrap"><table class="rel-table fuel-table"><thead>{head}</thead><tbody>{rows}</tbody></table></div>'
 
-def fuel_widget(lang):
+def fuel_widget(lang, hl=None):
+    """Wpisz ilość benzyny -> olej dla każdej proporcji naraz. hl = proporcja wyróżniona (np. 40)."""
     if lang == "en":
-        L = dict(h2="⛽ 2-Stroke Fuel Mix Calculator", litres="Petrol (litres):", ratio="Mix ratio:", res="2-stroke oil", per="That is", perb="ml per 1 litre.")
+        L = dict(h2="⛽ How much 2-stroke oil?", litres="How much petrol do you have? (litres)", per="per 1 litre:",
+                 note="Check the ratio in your engine manual or on the fuel cap.", lab="{r}:1")
     else:
-        L = dict(h2="⛽ Kalkulator mieszanki paliwowej 2T", litres="Benzyna (litry):", ratio="Proporcja:", res="Olej 2T", per="To", perb="ml na 1 litr.")
-    opts = "".join(f'<option value="{r}"{" selected" if r == 50 else ""}>1:{r} ({100 / r:g}%)</option>' for r in FUEL_RATIOS)
+        L = dict(h2="⛽ Ile oleju 2T wlać?", litres="Ile masz benzyny? (litry)", per="na 1 litr:",
+                 note="Proporcję sprawdź w instrukcji silnika lub na korku zbiornika.", lab="1:{r}")
+    sep = "','" if lang == "pl" else "'.'"
+    items = ""
+    for r in FUEL_RATIOS:
+        mark = hl == r
+        style = ' style="border:2px solid var(--accent); border-radius:10px; padding:0.4rem;"' if mark else ""
+        pct = f"{100 / r:.3g}"
+        if lang == "pl":
+            pct = pct.replace(".", ",")
+        items += (f'<div class="param-item"{style}><div class="label">{L["lab"].format(r=r)}'
+                  f' ({pct}%)</div><div class="val" data-r="{r}">{5000 / r:g} ml</div>'
+                  f'<div data-per="{r}" style="margin-top:0.2rem; font-size:0.8rem; color:var(--muted);"></div></div>')
     return f"""
 <div class="timer-box" style="text-align:left;" id="fuelBox">
     <h2 style="margin-top:0;">{L['h2']}</h2>
-    <div class="form-row">
-        <div><label for="fuL">{L['litres']}</label><input type="text" inputmode="decimal" id="fuL" value="5" oninput="calcFuel()"></div>
-        <div><label for="fuR">{L['ratio']}</label><select id="fuR" onchange="calcFuel()">{opts}</select></div>
-    </div>
-    <div class="param-box" style="margin-top:0.5rem;" aria-live="polite">
-        <div class="param-item"><div class="label">{L['res']}</div><div class="val" id="fuRes">100 ml</div></div>
-    </div>
-    <p id="fuNote" style="font-size:0.9rem; margin-bottom:0;"></p>
+    <label for="fuL">{L['litres']}</label>
+    <input type="text" inputmode="decimal" id="fuL" value="5" oninput="calcFuel()" style="max-width:12rem;">
+    <div class="param-box" style="margin-top:0.75rem; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));" aria-live="polite">{items}</div>
+    <p style="font-size:0.9rem; margin-bottom:0;">{L['note']}</p>
 </div>
 <script>
 function calcFuel() {{
     const l = parseFloat((document.getElementById('fuL').value || '').replace(',', '.')) || 0;
-    const r = parseFloat(document.getElementById('fuR').value) || 50;
-    const ml = l * 1000 / r;
-    document.getElementById('fuRes').textContent = (Math.round(ml * 10) / 10).toString().replace('.', {"','" if lang == "pl" else "'.'"}) + ' ml';
-    document.getElementById('fuNote').textContent = '{L['per']} ' + (Math.round(1000 / r * 10) / 10).toString().replace('.', {"','" if lang == "pl" else "'.'"}) + ' {L['perb']}';
+    const f = (x) => (Math.round(x * 10) / 10).toString().replace('.', {sep});
+    document.querySelectorAll('#fuelBox [data-r]').forEach(function (el) {{
+        const r = parseFloat(el.getAttribute('data-r'));
+        el.textContent = f(l * 1000 / r) + ' ml';
+        document.querySelector('#fuelBox [data-per="' + r + '"]').textContent = '{L['per']} ' + f(1000 / r) + ' ml';
+    }});
 }}
 calcFuel();
 </script>
@@ -2087,7 +2099,8 @@ for slug, title, val1, val2, tip, sub_cat in WARSZTAT_ITEMS:
             </ul>
         </div>"""
     elif slug.startswith("proporcje-mieszanki-paliwowej"):
-        extra_alert = """<div class="alert-box">⛽ Inna ilość benzyny albo proporcja? <a href="/warsztat/kalkulator-mieszanki-paliwowej-2t.html" style="color:var(--accent); font-weight:700;">Kalkulator mieszanki 2T z tabelą 1–20 l →</a></div>"""
+        _m = re.search(r"1-(\d+)$", slug)
+        extra_alert = fuel_widget("pl", int(_m.group(1)) if _m else None) + """<div class="alert-box">⛽ Tabela dla 1–20 litrów i wszystkich proporcji: <a href="/warsztat/kalkulator-mieszanki-paliwowej-2t.html" style="color:var(--accent); font-weight:700;">Kalkulator mieszanki 2T →</a></div>"""
     elif sub_cat == "stal":
         extra_alert = """<div class="alert-box"><strong>🔥 Uwaga technologiczna:</strong> Parametry obróbki cieplnej są orientacyjnymi zakresami katalogowymi. Przed hartowaniem zawsze zweryfikuj kartę materiałową (atest) od dostawcy danej partii stali.</div>"""
         conditions_html = """
@@ -2892,7 +2905,8 @@ for slug, title_pl, val1_pl, val2_pl, tip_pl, sub_cat in WARSZTAT_ITEMS:
     workshop_cards_en.append(f'<a href="/{rel_url}" class="card" data-sub="{sub_cat}"><span class="badge">{badge_txt}</span><h3>{title}</h3><p class="card-val">{val1}  |  {val2}</p></a>')
     extra_alert = ""
     if slug.startswith("proporcje-mieszanki-paliwowej"):
-        extra_alert = """<div class="alert-box">⛽ Different amount or ratio? <a href="/en/workshop/2-stroke-fuel-mix-calculator.html" style="color:var(--accent); font-weight:700;">2-stroke fuel mix calculator with a 1–20 L chart →</a></div>"""
+        _m = re.search(r"1-(\d+)$", slug)
+        extra_alert = fuel_widget("en", int(_m.group(1)) if _m else None) + """<div class="alert-box">⛽ Chart for 1–20 litres and every ratio: <a href="/en/workshop/2-stroke-fuel-mix-calculator.html" style="color:var(--accent); font-weight:700;">2-stroke fuel mix calculator →</a></div>"""
     if sub_cat == "stal":
         extra_alert = """<div class="alert-box"><strong>🔥 Technical note:</strong> heat-treatment parameters are typical catalogue ranges. Before hardening, always check the material data sheet (certificate) from the supplier of your batch of steel.</div>"""
     related_html = related_table(
